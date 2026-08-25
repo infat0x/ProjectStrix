@@ -99,7 +99,7 @@ export async function DELETE(
   if (!fs.existsSync(runFile) && !purge) {
     // Allow cancelling a scheduled scan even without run.json (it hasn't run yet)
     if (dbScan.status === "scheduled") {
-      await prisma.scan.update({ where: { id }, data: { status: "stopped", period: "none", nextRunAt: null } });
+      await prisma.scan.update({ where: { id }, data: { status: "completed", period: "none", nextRunAt: null } });
       log.info(`DELETE /api/scans/${id}`, "Scheduled scan cancelled (no run.json)");
       return NextResponse.json({ success: true });
     }
@@ -146,11 +146,11 @@ export async function DELETE(
   }
 
   const run = JSON.parse(fs.readFileSync(runFile, "utf-8"));
-  run.status = "stopped";
+  run.status = "completed";
   run.finishedAt = new Date().toISOString();
   fs.writeFileSync(runFile, JSON.stringify(run, null, 2));
-  await prisma.scan.update({ where: { id }, data: { status: "stopped" } });
-  log.info(`DELETE /api/scans/${id}`, "Scan marked as stopped");
+  await prisma.scan.update({ where: { id }, data: { status: "completed" } });
+  log.info(`DELETE /api/scans/${id}`, "Scan marked as completed");
 
   return NextResponse.json({ success: true });
 }

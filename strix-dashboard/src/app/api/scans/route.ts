@@ -618,9 +618,9 @@ export async function POST(req: NextRequest) {
     logStream.end();
     removeProcess(scanId);
     const updated = JSON.parse(fs.readFileSync(runFile, "utf-8"));
-    let finalStatus = code === 0 ? "completed" : code === null ? "stopped" : "failed";
-    if (code !== 0 && code !== null && (updated.status === "analyzing" || updated.status === "completed")) {
-      finalStatus = "completed"; // Agent finished but returned non-zero code (e.g. due to vulns or warnings)
+    let finalStatus = code === 0 ? "completed" : "failed";
+    if (updated.status === "completed" || updated.status === "stopped" || updated.status === "analyzing") {
+      finalStatus = "completed"; // Enforce completed if manually stopped or finished analyzing
     }
     updated.status = finalStatus;
     updated.finishedAt = new Date().toISOString();
