@@ -57,10 +57,12 @@ const LLM_MODELS = [
   // Vertex AI
   { value: "vertex_ai/gemini-3.1-pro-preview", label: "Vertex AI Gemini 3.1 Pro" },
   // DeepSeek
+  { value: "deepseek/deepseek-v4-pro", label: "DeepSeek V4 Pro" },
+  { value: "deepseek/deepseek-v4-flash", label: "DeepSeek V4 Flash" },
+  { value: "deepseek/deepseek-v4-flash-vision-exp", label: "DeepSeek V4 Flash Vision Exp" },
   { value: "deepseek/deepseek-coder", label: "DeepSeek Coder" },
-  { value: "deepseek/deepseek-v3", label: "DeepSeek v3" },
-  { value: "deepseek/deepseek-v4-pro", label: "DeepSeek v4 Pro" },
-  { value: "deepseek/deepseek-v4-flash", label: "DeepSeek v4 Flash" },
+  { value: "deepseek/deepseek-chat", label: "DeepSeek Chat" },
+  { value: "deepseek/deepseek-reasoner", label: "DeepSeek Reasoner" },
   // Groq
   { value: "groq/llama-3.3-70b-versatile", label: "Groq Llama 3.3 70B (Free)" },
   { value: "groq/llama3-70b-8192", label: "Groq Llama 3 70B (Free)" },
