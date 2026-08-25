@@ -48,10 +48,15 @@ const LLM_MODELS = [
   { value: "anthropic/claude-opus-5", label: "Anthropic Claude 5 Opus" },
   { value: "anthropic/claude-fable-5", label: "Anthropic Claude 5 Fable" },
   // Google
-  { value: "google/gemini-2.5-pro", label: "Google Gemini 2.5 Pro" },
-  { value: "google/gemini-3-pro", label: "Google Gemini 3 Pro" },
-  { value: "gemini/gemini-3.1-pro-preview", label: "Google Gemini 3.1 Pro (Preview)" },
-  { value: "gemini/gemini-3.6-flash", label: "Google Gemini 3.6 Flash" },
+  { value: "google/gemini-1.5-flash", label: "Google Gemini 1.5 Flash (Free)" },
+  { value: "google/gemini-1.5-pro", label: "Google Gemini 1.5 Pro (Free)" },
+  { value: "google/gemini-2.0-flash-exp", label: "Google Gemini 2.0 Flash Exp (Free)" },
+  { value: "google/gemini-2.5-flash", label: "Google Gemini 2.5 Flash (Free)" },
+  { value: "google/gemini-2.5-pro", label: "Google Gemini 2.5 Pro (Free)" },
+  { value: "google/gemini-3-pro", label: "Google Gemini 3 Pro (Free)" },
+  { value: "gemini/gemini-3.1-pro-preview", label: "Google Gemini 3.1 Pro Preview (Free)" },
+  { value: "gemini/gemini-3.6-flash", label: "Google Gemini 3.6 Flash (Free)" },
+  { value: "gemini/gemini-exp-1206", label: "Google Gemini Exp 1206 (Free)" },
   // Vertex AI
   { value: "vertex_ai/gemini-3.1-pro-preview", label: "Vertex AI Gemini 3.1 Pro" },
   // DeepSeek
@@ -184,6 +189,32 @@ function ScansContent() {
   const [showFilters, setShowFilters] = useState(false);
   const [collapsedGroups, setCollapsedGroups] = useState<Record<string, boolean>>({});
   
+  const [showModelSelect, setShowModelSelect] = useState(false);
+  const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
+  
+  const groupedModels = useMemo(() => {
+    const groups: Record<string, {value: string, label: string}[]> = {};
+    [...LLM_MODELS, ...customModels].forEach(m => {
+      let group = "Other";
+      if (m.value.startsWith("openai/")) group = "OpenAI";
+      else if (m.value.startsWith("anthropic/")) group = "Anthropic";
+      else if (m.value.startsWith("google/") || m.value.startsWith("gemini/")) group = "Google Gemini";
+      else if (m.value.startsWith("deepseek/")) group = "DeepSeek";
+      else if (m.value.startsWith("groq/")) group = "Groq";
+      else if (m.value.startsWith("openrouter/")) group = "OpenRouter";
+      else if (m.value.startsWith("mistral/")) group = "Mistral";
+      else if (m.value.startsWith("cohere/")) group = "Cohere";
+      else if (m.value.startsWith("dashscope/")) group = "DashScope";
+      else if (m.value.startsWith("moonshot/")) group = "Moonshot";
+      else if (m.value.startsWith("ollama/")) group = "Local (Ollama)";
+      else if (m.value.startsWith("vertex_ai/")) group = "Vertex AI";
+      
+      if (!groups[group]) groups[group] = [];
+      groups[group].push(m);
+    });
+    return groups;
+  }, [customModels]);
+
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [deletingBulk, setDeletingBulk] = useState(false);
@@ -836,16 +867,52 @@ function ScansContent() {
                 <div className="field-grid">
                   <div className="field">
                     <label className="field-label">LLM Model</label>
-                    <select
-                      className="field-input"
-                      value={form.llmModel}
-                      onChange={(e) => setForm({ ...form, llmModel: e.target.value })}
-                      disabled={launching}
-                    >
-                      {[...LLM_MODELS, ...customModels].map((m) => (
-                        <option key={m.value} value={m.value}>{m.label}</option>
-                      ))}
-                    </select>
+                    <div style={{ position: "relative" }}>
+                      <div 
+                        className={`field-input ${launching ? 'disabled' : ''}`} 
+                        style={{ display: "flex", justifyContent: "space-between", alignItems: "center", cursor: launching ? "not-allowed" : "pointer", userSelect: "none", opacity: launching ? 0.6 : 1 }}
+                        onClick={() => !launching && setShowModelSelect(!showModelSelect)}
+                      >
+                        <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+                          {[...LLM_MODELS, ...customModels].find(m => m.value === form.llmModel)?.label || form.llmModel}
+                        </span>
+                        <ChevronDown size={14} style={{ color: "var(--fg-3)", flexShrink: 0 }} />
+                      </div>
+                      
+                      {showModelSelect && (
+                        <>
+                          <div style={{ position: "fixed", inset: 0, zIndex: 90 }} onClick={() => setShowModelSelect(false)} />
+                          <div className="glass-panel animate-fade-in" style={{ position: "absolute", top: "100%", left: 0, right: 0, marginTop: 4, zIndex: 100, maxHeight: 300, overflowY: "auto", boxShadow: "0 10px 40px rgba(0,0,0,0.3)", borderRadius: "var(--r)", border: "1px solid var(--border)", background: "var(--bg-1)" }}>
+                            {Object.entries(groupedModels).map(([group, models]) => (
+                              <div key={group} style={{ borderBottom: "1px solid var(--border)" }}>
+                                <div 
+                                  onClick={() => setExpandedProviders(prev => ({ ...prev, [group]: !prev[group] }))}
+                                  style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: "8px 12px", background: "var(--bg-2)", cursor: "pointer", fontSize: 12, fontWeight: 600, color: "var(--fg-2)" }}
+                                >
+                                  {group}
+                                  {expandedProviders[group] ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+                                </div>
+                                {expandedProviders[group] && (
+                                  <div>
+                                    {models.map(m => (
+                                      <div 
+                                        key={m.value}
+                                        onClick={() => { setForm({ ...form, llmModel: m.value }); setShowModelSelect(false); }}
+                                        style={{ padding: "8px 12px", fontSize: 13, cursor: "pointer", background: form.llmModel === m.value ? "var(--bg-3)" : "transparent", color: form.llmModel === m.value ? "var(--fg)" : "var(--fg-2)" }}
+                                        onMouseEnter={e => { if(form.llmModel !== m.value) e.currentTarget.style.background = "var(--bg-2)"; }}
+                                        onMouseLeave={e => { if(form.llmModel !== m.value) e.currentTarget.style.background = "transparent"; }}
+                                      >
+                                        {m.label}
+                                      </div>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </>
+                      )}
+                    </div>
                   </div>
                   <div className="field">
                     <label className="field-label">Scan Mode</label>
