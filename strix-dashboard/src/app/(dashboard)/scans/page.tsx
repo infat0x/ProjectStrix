@@ -192,6 +192,18 @@ function ScansContent() {
   const [showModelSelect, setShowModelSelect] = useState(false);
   const [expandedProviders, setExpandedProviders] = useState<Record<string, boolean>>({});
   
+
+  const [selectionMode, setSelectionMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [deletingBulk, setDeletingBulk] = useState(false);
+  
+  const { confirm, alert } = useDialog();
+  const [scheduleModal, setScheduleModal] = useState<{ scanId: string, period: string, llmModel: string } | null>(null);
+  const [scheduling, setScheduling] = useState(false);
+  const [customModels, setCustomModels] = useState<{value: string, label: string}[]>([]);
+  const [savedInstructions, setSavedInstructions] = useState<{id: string, title: string, content: string}[]>([]);
+  const [now, setNow] = useState(Date.now());
+
   const groupedModels = useMemo(() => {
     const groups: Record<string, {value: string, label: string}[]> = {};
     [...LLM_MODELS, ...customModels].forEach(m => {
@@ -214,17 +226,6 @@ function ScansContent() {
     });
     return groups;
   }, [customModels]);
-
-  const [selectionMode, setSelectionMode] = useState(false);
-  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
-  const [deletingBulk, setDeletingBulk] = useState(false);
-  
-  const { confirm, alert } = useDialog();
-  const [scheduleModal, setScheduleModal] = useState<{ scanId: string, period: string, llmModel: string } | null>(null);
-  const [scheduling, setScheduling] = useState(false);
-  const [customModels, setCustomModels] = useState<{value: string, label: string}[]>([]);
-  const [savedInstructions, setSavedInstructions] = useState<{id: string, title: string, content: string}[]>([]);
-  const [now, setNow] = useState(Date.now());
 
   useEffect(() => {
     const iv = setInterval(() => setNow(Date.now()), 1000);
