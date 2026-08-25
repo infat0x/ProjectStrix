@@ -356,7 +356,7 @@ export async function POST(req: NextRequest) {
   let resolvedApiKey = "";
   if (llmModel.startsWith("openai/")) resolvedApiKey = userKeys.openai || "";
   else if (llmModel.startsWith("anthropic/")) resolvedApiKey = userKeys.anthropic || "";
-  else if (llmModel.startsWith("google/")) resolvedApiKey = userKeys.gemini || "";
+  else if (llmModel.startsWith("google/") || llmModel.startsWith("gemini/")) resolvedApiKey = userKeys.gemini || "";
   else if (llmModel.startsWith("deepseek/")) resolvedApiKey = userKeys.deepseek || "";
   else if (llmModel.startsWith("groq/")) resolvedApiKey = userKeys.groq || "";
   else if (llmModel.startsWith("openrouter/")) resolvedApiKey = userKeys.openrouter || "";
@@ -524,7 +524,7 @@ export async function POST(req: NextRequest) {
   const env = {
     ...process.env,
     PATH: `${process.env.PATH || ""}:/usr/local/bin:${process.env.HOME || ""}/.local/bin`,
-    STRIX_LLM: llmModel || "openai/gpt-4o",
+    STRIX_LLM: (llmModel || "openai/gpt-4o").replace(/^google\//, "gemini/"),
     LLM_API_KEY: apiKey,
     OPENAI_API_KEY: apiKey,
     ANTHROPIC_API_KEY: apiKey,
