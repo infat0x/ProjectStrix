@@ -48,13 +48,10 @@ const LLM_MODELS = [
   { value: "anthropic/claude-opus-5", label: "Anthropic Claude 5 Opus" },
   { value: "anthropic/claude-fable-5", label: "Anthropic Claude 5 Fable" },
   // Google
-  { value: "google/gemini-1.5-flash", label: "Google Gemini 1.5 Flash (Free)" },
-  { value: "google/gemini-1.5-pro", label: "Google Gemini 1.5 Pro (Free)" },
-  { value: "google/gemini-2.0-flash-exp", label: "Google Gemini 2.0 Flash Exp (Free)" },
-  { value: "google/gemini-2.5-flash", label: "Google Gemini 2.5 Flash (Free)" },
-  { value: "google/gemini-2.5-pro", label: "Google Gemini 2.5 Pro (Free)" },
-  { value: "google/gemini-3-pro", label: "Google Gemini 3 Pro (Free)" },
-  { value: "gemini/gemini-3.1-pro-preview", label: "Google Gemini 3.1 Pro Preview (Free)" },
+  { value: "gemini/gemini-3.1-flash", label: "Google Gemini 3.1 Flash (Free)" },
+  { value: "gemini/gemini-3.1-pro", label: "Google Gemini 3.1 Pro (Free)" },
+  { value: "gemini/gemini-3.5-flash", label: "Google Gemini 3.5 Flash (Free)" },
+  { value: "gemini/gemini-3.5-pro", label: "Google Gemini 3.5 Pro (Free)" },
   { value: "gemini/gemini-3.6-flash", label: "Google Gemini 3.6 Flash (Free)" },
   { value: "gemini/gemini-exp-1206", label: "Google Gemini Exp 1206 (Free)" },
   // Vertex AI
