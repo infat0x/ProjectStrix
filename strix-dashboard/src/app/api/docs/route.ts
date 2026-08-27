@@ -285,7 +285,7 @@ const spec = {
         description:
           "Starts a new Strix security assessment. The scan runs asynchronously in the background.\n\n" +
           "**API keys** are looked up from the user's stored settings — do not send them in this request.\n\n" +
-          "**Input limits:** `instruction` ≤ 8000 chars, `targetList` ≤ 100 000 chars.\n\n" +
+          "**Input limits:** `instruction` ≤ 25000 chars, `targetList` ≤ 100 000 chars.\n\n" +
           "If the strix CLI is not installed the scan runs in **demo mode** with mock data.",
         operationId: "createScan",
         security: [{ sessionCookie: [] }],
@@ -710,7 +710,7 @@ const spec = {
           projectName: { type: "string", description: "Optional project grouping name" },
           llmModel: { type: "string", description: "LLM provider/model in litellm format", default: "openai/gpt-4o", example: "deepseek/deepseek-coder" },
           scanMode: { type: "string", enum: ["quick", "standard", "deep"], default: "standard" },
-          instruction: { type: "string", description: "Custom agent instructions (max 8000 chars)", example: "Focus on authentication bypasses" },
+          instruction: { type: "string", description: "Custom agent instructions (max 25000 chars)", example: "Focus on authentication bypasses" },
           scopeMode: { type: "string", enum: ["auto", "strict", "loose"], default: "auto" },
           maxBudget: { type: "string", description: "Maximum token/cost budget" },
           maxTurns: { type: "string", description: "Maximum agent turns" },

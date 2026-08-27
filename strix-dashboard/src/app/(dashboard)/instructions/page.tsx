@@ -302,7 +302,7 @@ export default function InstructionsPage() {
                     padding: "4px 8px",
                     borderRadius: "4px"
                   }}>
-                    {String(content.length).padStart(4, '0')}/8000
+                    {String(content.length).padStart(5, '0')}/25000
                   </div>
                 </div>
               ) : (

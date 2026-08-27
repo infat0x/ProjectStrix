@@ -308,8 +308,8 @@ export async function POST(req: NextRequest) {
   }
 
   // M-4: Input length limits
-  if (instruction && instruction.length > 8000) {
-    return NextResponse.json({ error: "Instruction too long (max 8000 chars)" }, { status: 400 });
+  if (instruction && instruction.length > 25000) {
+    return NextResponse.json({ error: "Instruction too long (max 25000 chars)" }, { status: 400 });
   }
   if (targetList && targetList.length > 100000) {
     return NextResponse.json({ error: "Target list too large (max 100 000 chars)" }, { status: 400 });
