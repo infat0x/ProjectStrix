@@ -930,24 +930,45 @@ function ScansContent() {
                 </div>
 
                 <div className="field">
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline", marginBottom: 4 }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
                     <label className="field-label" style={{ margin: 0 }}>Custom Instructions (Optional)</label>
-                    {savedInstructions.length > 0 && (
-                      <select
-                        className="field-select"
-                        style={{ width: "auto", padding: "2px 8px", fontSize: 11, background: "var(--bg-2)" }}
-                        onChange={(e) => {
-                          if (e.target.value) {
-                            setForm({ ...form, instruction: e.target.value });
-                          }
-                        }}
-                      >
-                        <option value="">Load from Pool...</option>
-                        {savedInstructions.map(inst => (
-                          <option key={inst.id} value={inst.content}>{inst.title}</option>
-                        ))}
-                      </select>
-                    )}
+                    <div style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                      <label style={{ cursor: "pointer", fontSize: 11, background: "var(--bg-2)", border: "1px solid var(--border)", padding: "2px 8px", borderRadius: "var(--r-sm)", color: "var(--fg)", display: "flex", alignItems: "center" }}>
+                        Browse...
+                        <input 
+                          type="file" 
+                          accept=".txt,.md,.json,.yaml,.yml" 
+                          style={{ display: "none" }} 
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            const reader = new FileReader();
+                            reader.onload = (ev) => {
+                              const text = ev.target?.result as string;
+                              if (text) setForm(prev => ({ ...prev, instruction: text }));
+                            };
+                            reader.readAsText(file);
+                            e.target.value = '';
+                          }}
+                        />
+                      </label>
+                      {savedInstructions.length > 0 && (
+                        <select
+                          className="field-select"
+                          style={{ width: "auto", padding: "2px 8px", fontSize: 11, background: "var(--bg-2)" }}
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              setForm({ ...form, instruction: e.target.value });
+                            }
+                          }}
+                        >
+                          <option value="">Load from Pool...</option>
+                          {savedInstructions.map(inst => (
+                            <option key={inst.id} value={inst.content}>{inst.title}</option>
+                          ))}
+                        </select>
+                      )}
+                    </div>
                   </div>
                   <textarea
                     className="field-input"
