@@ -25,11 +25,36 @@ export async function GET(
   const session = await getSession();
   if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
-  const dbScan = await prisma.scan.findUnique({ where: { id } });
+  const dbScan = await prisma.scan.findUnique({ 
+    where: { id },
+    include: { vulnerabilities: true }
+  });
   if (!dbScan) return NextResponse.json({ error: "Scan not found" }, { status: 404 });
   if (session.role !== "ADMIN" && dbScan.userId !== session.userId) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
+
+  const mappedVulns = dbScan.vulnerabilities.map(v => ({
+    id: v.vulnId,
+    title: v.title,
+    severity: v.severity,
+    endpoint: v.endpoint,
+    method: v.method,
+    description: v.description,
+    poc: v.poc,
+    cvss: v.cvss,
+    remediation: v.remediation,
+    impact: v.impact,
+    technical_analysis: v.technical_analysis,
+    poc_description: v.poc_description,
+    poc_script_code: v.poc_script_code,
+    remediation_steps: v.remediation_steps,
+    evidence: v.evidence,
+    assumptions: v.assumptions,
+    fix_effort: v.fix_effort,
+    cwe: v.cwe,
+    finding_class: v.finding_class
+  }));
 
   const scanDir = getScanDir(id);
   const runFile = path.join(scanDir, "run.json");
@@ -39,10 +64,10 @@ export async function GET(
     log.warn(`GET /api/scans/${id}`, "Scan not found — run.json missing", {
       scanDir,
     });
-    // Fallback to DB info if run.json isn't created yet
+    // Fallback to DB info if run.json isn't created yet or was wiped by restart
     return NextResponse.json({ 
       ...dbScan, 
-      vulnerabilities: [] 
+      vulnerabilities: mappedVulns 
     });
   }
 
@@ -54,20 +79,20 @@ export async function GET(
   let vulnerabilities: any[] = [];
   if (fs.existsSync(vulnFile)) {
     try {
-      vulnerabilities = JSON.parse(fs.readFileSync(vulnFile, "utf-8"));
+      const fileVulns = JSON.parse(fs.readFileSync(vulnFile, "utf-8"));
+      // If the file is valid but empty, it might be due to a bug or restart, fallback to DB if DB has them.
+      vulnerabilities = (Array.isArray(fileVulns) && fileVulns.length > 0) ? fileVulns : (mappedVulns.length > 0 ? mappedVulns : fileVulns);
       log.debug(
         `GET /api/scans/${id}`,
         `Loaded ${vulnerabilities.length} vulnerabilities`,
       );
     } catch (e) {
-      log.error(
-        `GET /api/scans/${id}`,
-        "Failed to parse vulnerabilities.json",
-        e,
-      );
+      log.error(`GET /api/scans/${id}`, "Failed to parse vulnerabilities.json", e);
+      vulnerabilities = mappedVulns;
     }
   } else {
-    log.debug(`GET /api/scans/${id}`, "No vulnerabilities.json yet");
+    log.debug(`GET /api/scans/${id}`, "No vulnerabilities.json yet, falling back to DB");
+    vulnerabilities = mappedVulns;
   }
 
   return NextResponse.json({ ...dbScan, ...run, vulnerabilities });

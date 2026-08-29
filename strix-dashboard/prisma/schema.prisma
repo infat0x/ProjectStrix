@@ -85,18 +85,29 @@ model Project {
 }
 
 model Vulnerability {
-  id          String   @id @default(uuid())
-  scanId      String
-  scan        Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
-  vulnId      String
-  title       String
-  severity    String
-  endpoint    String?
-  method      String?
-  description String
-  poc         String?
-  cvss        Float?
-  remediation String?
-  status      String   @default("OPEN")
-  createdAt   DateTime @default(now())
+  id                 String   @id @default(uuid())
+  scanId             String
+  scan               Scan     @relation(fields: [scanId], references: [id], onDelete: Cascade)
+  vulnId             String
+  title              String
+  severity           String
+  endpoint           String?
+  method             String?
+  description        String
+  poc                String?
+  cvss               Float?
+  remediation        String?
+  impact             String?
+  technical_analysis String?
+  poc_description    String?
+  poc_script_code    String?
+  remediation_steps  String?
+  evidence           String?
+  assumptions        String?
+  fix_effort         String?
+  cwe                String?
+  finding_class      String?
+  status             String   @default("OPEN")
+  createdAt          DateTime @default(now())
 }
+

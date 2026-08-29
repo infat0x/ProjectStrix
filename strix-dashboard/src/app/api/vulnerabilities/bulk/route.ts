@@ -39,6 +39,7 @@ export async function DELETE(req: NextRequest) {
       const vulnFile = path.join(RUNS_DIR, scanId, "vulnerabilities.json");
       
       // Delete from vulnerabilities.json
+      let deletedFromJson = false;
       if (fs.existsSync(vulnFile)) {
         try {
           const vulns = JSON.parse(fs.readFileSync(vulnFile, "utf-8"));
@@ -49,6 +50,7 @@ export async function DELETE(req: NextRequest) {
           if (newVulns.length !== originalLength) {
             fs.writeFileSync(vulnFile, JSON.stringify(newVulns, null, 2));
             deletedCount += (originalLength - newVulns.length);
+            deletedFromJson = true;
             
             // Update the run.json vulnCount if needed
             const runFile = path.join(RUNS_DIR, scanId, "run.json");
@@ -57,24 +59,29 @@ export async function DELETE(req: NextRequest) {
                run.vulnCount = newVulns.length;
                fs.writeFileSync(runFile, JSON.stringify(run, null, 2));
             }
-            
-            // Update the DB vulnCount
-            await prisma.scan.update({
-              where: { id: scanId },
-              data: { vulnCount: newVulns.length }
-            });
           }
         } catch (e) {
           log.error(`DELETE /api/vulnerabilities/bulk`, `Error updating JSON for scan ${scanId}`, e);
         }
       }
 
-      // Delete from Prisma DB just in case they are synced
-      await prisma.vulnerability.deleteMany({
+      // Delete from Prisma DB
+      const dbDeleteResult = await prisma.vulnerability.deleteMany({
         where: {
           scanId,
           vulnId: { in: vulnIds }
         }
+      });
+
+      if (!deletedFromJson && dbDeleteResult.count > 0) {
+        deletedCount += dbDeleteResult.count;
+      }
+
+      // Always recount and update the DB vulnCount
+      const remainingCount = await prisma.vulnerability.count({ where: { scanId } });
+      await prisma.scan.update({
+        where: { id: scanId },
+        data: { vulnCount: remainingCount }
       });
     }
 

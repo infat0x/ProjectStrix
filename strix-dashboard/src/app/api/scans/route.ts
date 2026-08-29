@@ -645,7 +645,17 @@ export async function POST(req: NextRequest) {
           description: v.description || "",
           poc: v.poc || "",
           cvss: v.cvss || 0.0,
-          remediation: v.remediation || ""
+          remediation: v.remediation || "",
+          impact: v.impact || "",
+          technical_analysis: v.technical_analysis || "",
+          poc_description: v.poc_description || "",
+          poc_script_code: v.poc_script_code || "",
+          remediation_steps: v.remediation_steps || "",
+          evidence: v.evidence || "",
+          assumptions: v.assumptions || "",
+          fix_effort: v.fix_effort || "",
+          cwe: v.cwe || "",
+          finding_class: v.finding_class || ""
         }));
         
         prisma.vulnerability.createMany({
