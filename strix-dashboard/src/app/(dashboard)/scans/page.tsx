@@ -205,7 +205,7 @@ function ScansContent() {
 
   const groupedModels = useMemo(() => {
     const groups: Record<string, {value: string, label: string}[]> = {};
-    [...LLM_MODELS, ...customModels].forEach(m => {
+    LLM_MODELS.forEach(m => {
       let group = "Other";
       if (m.value.startsWith("openai/")) group = "OpenAI";
       else if (m.value.startsWith("anthropic/")) group = "Anthropic";
@@ -223,6 +223,11 @@ function ScansContent() {
       if (!groups[group]) groups[group] = [];
       groups[group].push(m);
     });
+
+    if (customModels && customModels.length > 0) {
+      groups["My Custom Models"] = customModels;
+    }
+
     return groups;
   }, [customModels]);
 

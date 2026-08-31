@@ -98,7 +98,7 @@ export default function Settings() {
       setCustomModels(prev => {
         const newModels = [...prev];
         if (data.success) {
-          newModels[index] = { ...newModels[index], testStatus: "success", testMsg: "" };
+          newModels[index] = { ...newModels[index], testStatus: "success", testMsg: data.message };
         } else {
           newModels[index] = { ...newModels[index], testStatus: "error", testMsg: data.error || "Failed to test" };
         }
@@ -306,8 +306,8 @@ export default function Settings() {
                       
                       {model.testStatus === "success" && (
                         <span style={{ fontSize: 11, color: "var(--sev-low)", display: "flex", alignItems: "center", gap: 4 }}>
-                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sev-low)", display: "inline-block" }}></span>
-                          Success (Saved)
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sev-low)", display: "inline-block", flexShrink: 0 }}></span>
+                          Success: {model.testMsg || "Saved"}
                         </span>
                       )}
                       {model.testStatus === "error" && (

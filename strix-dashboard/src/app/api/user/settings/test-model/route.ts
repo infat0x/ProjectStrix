@@ -12,81 +12,72 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Model ID is required" }, { status: 400 });
     }
     
-    // If a custom URL is provided, try to ping it
+    // Helper to perform the test prompt
+    const runTestPrompt = async (targetUrl: string, authHeader: string | null, rawModelId: string) => {
+      // Strip provider prefix for the actual request body if it exists, but some proxies (like LiteLLM) need it.
+      // Usually, OpenAI or Ollama v1 API expects the model name without prefix.
+      const actualModelId = rawModelId.includes("/") ? rawModelId.split("/").slice(1).join("/") : rawModelId;
+      
+      const headers: Record<string, string> = { "Content-Type": "application/json" };
+      if (authHeader) headers["Authorization"] = authHeader;
+
+      const body = JSON.stringify({
+        model: actualModelId,
+        messages: [{ role: "user", content: "Hello, this is a test. Please reply with a short greeting." }],
+        max_tokens: 50
+      });
+
+      const response = await fetch(targetUrl, { method: "POST", headers, body });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`Status ${response.status}: ${errText.slice(0, 100)}`);
+      }
+      
+      const data = await response.json();
+      return data.choices?.[0]?.message?.content || "Success but no text returned.";
+    };
+    
+    // If a custom URL is provided
     if (url) {
       try {
-        const fetchOptions: RequestInit = {
-          method: "GET",
-          headers: { "Content-Type": "application/json" }
-        };
-        // Add authorization if custom apiKey provided
-        if (apiKey) {
-          fetchOptions.headers = { ...fetchOptions.headers, "Authorization": `Bearer ${apiKey}` };
-        }
-        
-        // Very generic ping, usually /v1/models is standard for OpenAI compatible endpoints,
-        // or just ping the base URL. We'll try hitting the URL directly, assuming they might provide the health endpoint.
-        // For Litellm / Ollama, we can just ping the base if they didn't provide full path.
         let targetUrl = url;
-        if (model.startsWith("ollama/") && !url.endsWith("/api/tags")) {
-            targetUrl = url.replace(/\/+$/, "") + "/api/tags";
-        } else if (model.startsWith("openai/") && !url.includes("/v1/models")) {
-            targetUrl = url.replace(/\/+$/, "") + "/v1/models";
+        // Assume OpenAI v1 compatible chat endpoint if not explicitly provided
+        if (!targetUrl.endsWith("/chat/completions")) {
+           targetUrl = targetUrl.replace(/\/+$/, "") + (targetUrl.includes("/v1") ? "/chat/completions" : "/v1/chat/completions");
         }
-
-        const response = await fetch(targetUrl, fetchOptions);
-        if (response.ok) {
-          return NextResponse.json({ success: true, message: "Custom endpoint verified" });
-        } else {
-           return NextResponse.json({ error: `Endpoint returned status ${response.status}` }, { status: 400 });
-        }
+        const authHeader = apiKey ? `Bearer ${apiKey}` : null;
+        const reply = await runTestPrompt(targetUrl, authHeader, model);
+        return NextResponse.json({ success: true, message: reply });
       } catch (e: any) {
-        return NextResponse.json({ error: `Failed to connect to custom URL: ${e.message || "Unknown error"}` }, { status: 400 });
+        return NextResponse.json({ error: `Failed: ${e.message}` }, { status: 400 });
       }
     }
 
-    // Very basic check for ollama (default localhost)
+    // Default Ollama
     if (model.startsWith("ollama/")) {
       try {
-        const response = await fetch("http://localhost:11434/api/tags", {
-          method: "GET",
-          headers: { "Content-Type": "application/json" }
-        });
-        if (response.ok) {
-          return NextResponse.json({ success: true });
-        }
-      } catch (e) {
-        return NextResponse.json({ error: "Ollama is not running locally or unreachable." }, { status: 400 });
+        const reply = await runTestPrompt("http://localhost:11434/v1/chat/completions", null, model);
+        return NextResponse.json({ success: true, message: reply });
+      } catch (e: any) {
+        return NextResponse.json({ error: `Ollama error: ${e.message}` }, { status: 400 });
       }
     }
 
-    // Basic check for OpenAI custom models (default endpoint)
+    // Default OpenAI
     if (model.startsWith("openai/")) {
       const openAiKey = keys?.openai;
       if (!openAiKey) {
-        return NextResponse.json({ error: "OpenAI API Key is required to test this model." }, { status: 400 });
+        return NextResponse.json({ error: "OpenAI API Key is required." }, { status: 400 });
       }
-
       try {
-        const response = await fetch("https://api.openai.com/v1/models", {
-          method: "GET",
-          headers: { 
-            "Authorization": `Bearer ${openAiKey}`,
-            "Content-Type": "application/json"
-          }
-        });
-        if (response.ok) {
-          return NextResponse.json({ success: true });
-        }
-      } catch (e) {
-        return NextResponse.json({ error: "Failed to connect to OpenAI API." }, { status: 400 });
+        const reply = await runTestPrompt("https://api.openai.com/v1/chat/completions", `Bearer ${openAiKey}`, model);
+        return NextResponse.json({ success: true, message: reply });
+      } catch (e: any) {
+        return NextResponse.json({ error: `OpenAI error: ${e.message}` }, { status: 400 });
       }
     }
 
-    // For any other model format we don't explicitly know how to test yet, 
-    // we just return success to allow saving, or we could just say "Test Not Supported".
-    // For now, we'll return success so the user gets the green light.
-    return NextResponse.json({ success: true, message: "Model accepted (no strict validation)" });
+    return NextResponse.json({ success: true, message: "Model saved (No default test endpoint defined for this provider)" });
 
   } catch (e: any) {
     return NextResponse.json({ error: "Failed to test model" }, { status: 500 });
