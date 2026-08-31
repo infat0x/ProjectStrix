@@ -353,20 +353,35 @@ export async function POST(req: NextRequest) {
   // Fetch API Keys directly from DB (M-5: stored encrypted, decrypt to use).
   const userKeys: any = readApiKeys(userExists.apiKeys);
 
-  let resolvedApiKey = "";
-  if (llmModel.startsWith("openai/")) resolvedApiKey = userKeys.openai || "";
-  else if (llmModel.startsWith("anthropic/")) resolvedApiKey = userKeys.anthropic || "";
-  else if (llmModel.startsWith("google/") || llmModel.startsWith("gemini/")) resolvedApiKey = userKeys.gemini || "";
-  else if (llmModel.startsWith("deepseek/")) resolvedApiKey = userKeys.deepseek || "";
-  else if (llmModel.startsWith("groq/")) resolvedApiKey = userKeys.groq || "";
-  else if (llmModel.startsWith("openrouter/")) resolvedApiKey = userKeys.openrouter || "";
-  else if (llmModel.startsWith("mistral/")) resolvedApiKey = userKeys.mistral || "";
-  else if (llmModel.startsWith("cohere/")) resolvedApiKey = userKeys.cohere || "";
-  else if (llmModel.startsWith("dashscope/")) resolvedApiKey = userKeys.dashscope || "";
-  else if (llmModel.startsWith("moonshot/")) resolvedApiKey = userKeys.moonshot || "";
-  else if (llmModel.startsWith("vertex_ai/")) resolvedApiKey = userKeys.vertex_ai || "";
+  // Check if it's a custom model first
+  const customModel = await prisma.customModel.findFirst({ 
+    where: { userId: createdUserId, value: llmModel } 
+  });
 
-  if (!resolvedApiKey && !body.simulationMode && !llmModel.startsWith("ollama/")) {
+  let resolvedApiKey = "";
+  let customApiBase = "";
+  let isCustom = false;
+
+  if (customModel) {
+    isCustom = true;
+    if (customModel.apiKey) resolvedApiKey = customModel.apiKey;
+    if (customModel.url) customApiBase = customModel.url;
+  } else {
+    if (llmModel.startsWith("openai/")) resolvedApiKey = userKeys.openai || "";
+    else if (llmModel.startsWith("anthropic/")) resolvedApiKey = userKeys.anthropic || "";
+    else if (llmModel.startsWith("google/") || llmModel.startsWith("gemini/")) resolvedApiKey = userKeys.gemini || "";
+    else if (llmModel.startsWith("deepseek/")) resolvedApiKey = userKeys.deepseek || "";
+    else if (llmModel.startsWith("groq/")) resolvedApiKey = userKeys.groq || "";
+    else if (llmModel.startsWith("openrouter/")) resolvedApiKey = userKeys.openrouter || "";
+    else if (llmModel.startsWith("mistral/")) resolvedApiKey = userKeys.mistral || "";
+    else if (llmModel.startsWith("cohere/")) resolvedApiKey = userKeys.cohere || "";
+    else if (llmModel.startsWith("dashscope/")) resolvedApiKey = userKeys.dashscope || "";
+    else if (llmModel.startsWith("moonshot/")) resolvedApiKey = userKeys.moonshot || "";
+    else if (llmModel.startsWith("vertex_ai/")) resolvedApiKey = userKeys.vertex_ai || "";
+  }
+
+  // Allow custom models to proceed without an API key (e.g. local endpoints)
+  if (!resolvedApiKey && !body.simulationMode && !llmModel.startsWith("ollama/") && !isCustom) {
     log.warn("POST /api/scans", `Rejected: API key for ${llmModel} is missing in DB`);
     return NextResponse.json({ error: `API Key for ${llmModel} is not configured in Settings.` }, { status: 400 });
   }
@@ -521,7 +536,7 @@ export async function POST(req: NextRequest) {
     
   }
 
-  const env = {
+  const env: any = {
     ...process.env,
     PATH: `${process.env.PATH || ""}:/usr/local/bin:${process.env.HOME || ""}/.local/bin`,
     STRIX_LLM: (llmModel || "openai/gpt-4o").replace(/^google\//, "gemini/"),
@@ -534,6 +549,12 @@ export async function POST(req: NextRequest) {
     MOONSHOT_API_KEY: apiKey,
     VERTEX_AI_API_KEY: apiKey,
   };
+
+  if (isCustom && customApiBase) {
+    // LiteLLM supports OPENAI_API_BASE or specific provider bases.
+    env.OPENAI_API_BASE = customApiBase;
+    env.LITELLM_API_BASE = customApiBase;
+  }
 
   log.info("POST /api/scans", `Spawning strix process`, {
     cmd: strixCmd,
