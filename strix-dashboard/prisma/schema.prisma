@@ -73,6 +73,8 @@ model CustomModel {
   user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
   value       String
   label       String
+  url         String?
+  apiKey      String?
 }
 
 model Project {

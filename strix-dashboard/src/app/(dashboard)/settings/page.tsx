@@ -13,7 +13,7 @@ const TABS = [
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("api");
   const [keys, setKeys] = useState({ openai: "", anthropic: "", gemini: "", deepseek: "", groq: "", openrouter: "", mistral: "", cohere: "", dashscope: "", moonshot: "", vertex_ai: "" });
-  const [customModels, setCustomModels] = useState<{value: string, label: string, testStatus?: "idle" | "loading" | "success" | "error", testMsg?: string}[]>([]);
+  const [customModels, setCustomModels] = useState<{value: string, label: string, url?: string, apiKey?: string, testStatus?: "idle" | "loading" | "success" | "error", testMsg?: string}[]>([]);
   const [agentConfig, setAgentConfig] = useState({ aggressiveness: 50, maxThreads: 4 });
   const [notificationConfig, setNotificationConfig] = useState({ slackBotToken: "", slackChannelId: "", notifyOnStart: false, notifyOnFinish: true });
   const [preferencesConfig, setPreferencesConfig] = useState({ theme: "dark", defaultModel: "openai/gpt-4o", autoDeleteDays: 0 });
@@ -43,7 +43,7 @@ export default function Settings() {
             });
           }
           if (data.customModels) {
-            setCustomModels(data.customModels.map((m: any) => ({ value: m.value, label: m.label })));
+            setCustomModels(data.customModels.map((m: any) => ({ value: m.value, label: m.label, url: m.url || "", apiKey: m.apiKey || "" })));
           }
         }
       })
@@ -78,7 +78,7 @@ export default function Settings() {
     setTimeout(() => setSaved(false), 2000);
   };
 
-  const handleTestModel = async (index: number, modelValue: string) => {
+  const handleTestModel = async (index: number, modelValue: string, modelUrl?: string, modelApiKey?: string) => {
     if (!modelValue) return;
     
     setCustomModels(prev => {
@@ -91,7 +91,7 @@ export default function Settings() {
       const res = await fetch("/api/user/settings/test-model", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ model: modelValue, keys })
+        body: JSON.stringify({ model: modelValue, keys, url: modelUrl, apiKey: modelApiKey })
       });
       const data = await res.json();
       
@@ -255,12 +255,39 @@ export default function Settings() {
                         }}
                       />
                     </div>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <label style={s.label}>API Base URL (Optional)</label>
+                      <input
+                        style={s.input}
+                        placeholder="e.g. http://localhost:11434"
+                        value={model.url || ""}
+                        onChange={(e) => {
+                          const newModels = [...customModels];
+                          newModels[i].url = e.target.value;
+                          setCustomModels(newModels);
+                        }}
+                      />
+                    </div>
+                    <div style={{ flex: 1, display: "flex", flexDirection: "column", gap: 6 }}>
+                      <label style={s.label}>API Key (Optional)</label>
+                      <input
+                        style={s.input}
+                        type="password"
+                        placeholder="sk-..."
+                        value={model.apiKey || ""}
+                        onChange={(e) => {
+                          const newModels = [...customModels];
+                          newModels[i].apiKey = e.target.value;
+                          setCustomModels(newModels);
+                        }}
+                      />
+                    </div>
                     <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 22 }}>
                       <div style={{ display: "flex", gap: 8 }}>
                         <button
                           className="btn-secondary"
                           style={{ borderColor: "var(--border-md)", padding: "8px 12px", borderRadius: "var(--r)", fontSize: 13, background: "var(--bg-2)", color: "var(--fg)", cursor: "pointer", border: "1px solid" }}
-                          onClick={() => handleTestModel(i, model.value)}
+                          onClick={() => handleTestModel(i, model.value, model.url, model.apiKey)}
                           disabled={model.testStatus === "loading"}
                         >
                           {model.testStatus === "loading" ? "Testing..." : "Test"}
@@ -295,7 +322,7 @@ export default function Settings() {
                 <button
                   className="btn-ghost"
                   style={{ alignSelf: "flex-start" }}
-                  onClick={() => setCustomModels([...customModels, { value: "", label: "" }])}
+                  onClick={() => setCustomModels([...customModels, { value: "", label: "", url: "", apiKey: "" }])}
                 >
                   + Add Custom Model
                 </button>

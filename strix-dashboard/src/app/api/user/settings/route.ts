@@ -85,12 +85,15 @@ export async function POST(req: NextRequest) {
       if (models.length > 50) {
         return NextResponse.json({ error: "Too many custom models (max 50)" }, { status: 400 });
       }
-      const clean: { userId: string; value: string; label: string }[] = [];
+      const clean: { userId: string; value: string; label: string; url: string | null; apiKey: string | null }[] = [];
       for (const m of models) {
         if (!m || typeof m !== "object") continue;
         const value = typeof m.value === "string" ? m.value.trim().slice(0, 200) : "";
         const label = typeof m.label === "string" ? m.label.trim().slice(0, 200) : "";
-        if (value && label) clean.push({ userId, value, label });
+        const url = typeof m.url === "string" && m.url.trim() ? m.url.trim().slice(0, 500) : null;
+        const apiKey = typeof m.apiKey === "string" && m.apiKey.trim() ? m.apiKey.trim().slice(0, 500) : null;
+        
+        if (value && label) clean.push({ userId, value, label, url, apiKey });
       }
 
       // Delete existing
