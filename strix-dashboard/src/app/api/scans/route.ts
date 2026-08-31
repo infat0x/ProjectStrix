@@ -386,7 +386,8 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: `API Key for ${llmModel} is not configured in Settings.` }, { status: 400 });
   }
 
-  const apiKey = resolvedApiKey;
+  // LiteLLM requires an API key to be set even for local proxies, otherwise it crashes.
+  const apiKey = resolvedApiKey || (isCustom ? "dummy_local_key" : "");
 
   try {
     const existing = await prisma.scan.findUnique({ where: { id: scanId } });
