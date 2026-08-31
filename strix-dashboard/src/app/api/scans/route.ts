@@ -553,8 +553,13 @@ export async function POST(req: NextRequest) {
 
   if (isCustom && customApiBase) {
     // LiteLLM supports OPENAI_API_BASE or specific provider bases.
-    env.OPENAI_API_BASE = customApiBase;
-    env.LITELLM_API_BASE = customApiBase;
+    // For OpenAI-compatible endpoints, LiteLLM expects the base URL to end with /v1.
+    let finalBase = customApiBase.replace(/\/+$/, "");
+    if (llmModel.startsWith("openai/") && !finalBase.includes("/v1")) {
+      finalBase += "/v1";
+    }
+    env.OPENAI_API_BASE = finalBase;
+    env.LITELLM_API_BASE = finalBase;
   }
 
   log.info("POST /api/scans", `Spawning strix process`, {
