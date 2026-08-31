@@ -13,7 +13,7 @@ const TABS = [
 export default function Settings() {
   const [activeTab, setActiveTab] = useState("api");
   const [keys, setKeys] = useState({ openai: "", anthropic: "", gemini: "", deepseek: "", groq: "", openrouter: "", mistral: "", cohere: "", dashscope: "", moonshot: "", vertex_ai: "" });
-  const [customModels, setCustomModels] = useState<{value: string, label: string}[]>([]);
+  const [customModels, setCustomModels] = useState<{value: string, label: string, testStatus?: "idle" | "loading" | "success" | "error", testMsg?: string}[]>([]);
   const [agentConfig, setAgentConfig] = useState({ aggressiveness: 50, maxThreads: 4 });
   const [notificationConfig, setNotificationConfig] = useState({ slackBotToken: "", slackChannelId: "", notifyOnStart: false, notifyOnFinish: true });
   const [preferencesConfig, setPreferencesConfig] = useState({ theme: "dark", defaultModel: "openai/gpt-4o", autoDeleteDays: 0 });
@@ -76,6 +76,45 @@ export default function Settings() {
     }
     setSaved(true);
     setTimeout(() => setSaved(false), 2000);
+  };
+
+  const handleTestModel = async (index: number, modelValue: string) => {
+    if (!modelValue) return;
+    
+    setCustomModels(prev => {
+      const newModels = [...prev];
+      newModels[index] = { ...newModels[index], testStatus: "loading" };
+      return newModels;
+    });
+
+    try {
+      const res = await fetch("/api/user/settings/test-model", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ model: modelValue, keys })
+      });
+      const data = await res.json();
+      
+      setCustomModels(prev => {
+        const newModels = [...prev];
+        if (data.success) {
+          newModels[index] = { ...newModels[index], testStatus: "success", testMsg: "" };
+        } else {
+          newModels[index] = { ...newModels[index], testStatus: "error", testMsg: data.error || "Failed to test" };
+        }
+        return newModels;
+      });
+      
+      if (data.success) {
+        handleSave("api");
+      }
+    } catch (e) {
+      setCustomModels(prev => {
+        const newModels = [...prev];
+        newModels[index] = { ...newModels[index], testStatus: "error", testMsg: "Network error" };
+        return newModels;
+      });
+    }
   };
 
   const s: any = {
@@ -216,16 +255,41 @@ export default function Settings() {
                         }}
                       />
                     </div>
-                    <button
-                      className="btn-ghost"
-                      style={{ marginTop: 22, color: "var(--sev-critical)", borderColor: "var(--sev-critical-bd)" }}
-                      onClick={() => {
-                        const newModels = customModels.filter((_, idx) => idx !== i);
-                        setCustomModels(newModels);
-                      }}
-                    >
-                      Remove
-                    </button>
+                    <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 22 }}>
+                      <div style={{ display: "flex", gap: 8 }}>
+                        <button
+                          className="btn-secondary"
+                          style={{ borderColor: "var(--border-md)", padding: "8px 12px", borderRadius: "var(--r)", fontSize: 13, background: "var(--bg-2)", color: "var(--fg)", cursor: "pointer", border: "1px solid" }}
+                          onClick={() => handleTestModel(i, model.value)}
+                          disabled={model.testStatus === "loading"}
+                        >
+                          {model.testStatus === "loading" ? "Testing..." : "Test"}
+                        </button>
+                        <button
+                          className="btn-ghost"
+                          style={{ color: "var(--sev-critical)", borderColor: "var(--sev-critical-bd)" }}
+                          onClick={() => {
+                            const newModels = customModels.filter((_, idx) => idx !== i);
+                            setCustomModels(newModels);
+                          }}
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      
+                      {model.testStatus === "success" && (
+                        <span style={{ fontSize: 11, color: "var(--sev-low)", display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sev-low)", display: "inline-block" }}></span>
+                          Success (Saved)
+                        </span>
+                      )}
+                      {model.testStatus === "error" && (
+                        <span style={{ fontSize: 11, color: "var(--sev-critical)", display: "flex", alignItems: "center", gap: 4 }}>
+                          <span style={{ width: 8, height: 8, borderRadius: "50%", background: "var(--sev-critical)", display: "inline-block" }}></span>
+                          {model.testMsg || "Error"}
+                        </span>
+                      )}
+                    </div>
                   </div>
                 ))}
                 <button
