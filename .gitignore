@@ -2,6 +2,7 @@ __pycache__/
 *.pyc
 .env
 .env.podman
+podman/.env
 podman/.env.podman
 .DS_Store
 .idea/

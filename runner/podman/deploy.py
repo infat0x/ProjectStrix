@@ -3,6 +3,7 @@
 Project Strix — Automated 1-Click Podman Deployment Orchestrator
 Idempotent, self-healing deployment for containerized Strix (Podman + Compose).
 Execution scripts live in runner/podman/; container configurations live in podman/.
+Automatically handles .env generation and secrets resolution (zero manual configuration).
 Full cross-platform support: Linux VPS/Bare-metal, Windows host, and WSL2.
 """
 
@@ -13,7 +14,17 @@ import secrets
 import re
 import time
 
-# --- Terminal Colors ---
+# Ensure UTF-8 output on Windows consoles to prevent UnicodeEncodeError
+if sys.platform == "win32":
+    try:
+        if hasattr(sys.stdout, "reconfigure"):
+            sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+        if hasattr(sys.stderr, "reconfigure"):
+            sys.stderr.reconfigure(encoding="utf-8", errors="replace")
+    except Exception:
+        pass
+
+# --- Terminal Colors & Symbols ---
 class Colors:
     HEADER = '\033[95m'
     OKBLUE = '\033[94m'
@@ -24,17 +35,21 @@ class Colors:
     ENDC = '\033[0m'
     BOLD = '\033[1m'
 
+CHECK_ICON = "[+]" if sys.platform == "win32" and (getattr(sys.stdout, "encoding", "") or "").lower() not in ("utf-8", "utf8") else "✔"
+CROSS_ICON = "[X]" if sys.platform == "win32" and (getattr(sys.stdout, "encoding", "") or "").lower() not in ("utf-8", "utf8") else "✖"
+WARN_ICON  = "[!]" if sys.platform == "win32" and (getattr(sys.stdout, "encoding", "") or "").lower() not in ("utf-8", "utf8") else "⚠"
+
 def print_step(msg):
     print(f"\n{Colors.OKBLUE}{Colors.BOLD}==>{Colors.ENDC} {Colors.BOLD}{msg}{Colors.ENDC}")
 
 def print_success(msg):
-    print(f"{Colors.OKGREEN}✔ {msg}{Colors.ENDC}")
+    print(f"{Colors.OKGREEN}{CHECK_ICON} {msg}{Colors.ENDC}")
 
 def print_warn(msg):
-    print(f"{Colors.WARNING}⚠ {msg}{Colors.ENDC}")
+    print(f"{Colors.WARNING}{WARN_ICON} {msg}{Colors.ENDC}")
 
 def print_error(msg):
-    print(f"{Colors.FAIL}✖ {msg}{Colors.ENDC}")
+    print(f"{Colors.FAIL}{CROSS_ICON} {msg}{Colors.ENDC}")
 
 def get_runner_dir():
     """Return this script's directory (runner/podman)."""
@@ -106,8 +121,24 @@ def handle_windows_host(project_root):
     if code_wsl == 0:
         print_success("WSL2 subsystem is active! Bridging deployment into WSL2 automatically...")
         norm_path = project_root.replace("\\", "/")
-        code_p, wsl_path_out = run_cmd(f'wsl wslpath -a "{norm_path}"', fail_on_error=False)
-        wsl_dir = wsl_path_out.strip() if code_p == 0 else ""
+        
+        # Calculate WSL path cleanly without stderr/warning pollution
+        wsl_dir = ""
+        try:
+            res = subprocess.run(
+                ["wsl", "wslpath", "-a", norm_path],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                text=True
+            )
+            for line in res.stdout.splitlines():
+                line = line.strip().replace("\r", "")
+                if line.startswith("/"):
+                    wsl_dir = line
+                    break
+        except Exception:
+            pass
+
         if not wsl_dir:
             drive_letter = norm_path[0].lower()
             rest = norm_path[2:]
@@ -120,16 +151,37 @@ def handle_windows_host(project_root):
             run_cmd("wsl -u root apt-get update && wsl -u root apt-get install -y podman podman-compose python3", fail_on_error=False)
 
         print_step(f"Executing deployment in WSL2 at {wsl_dir}...")
-        bridge_cmd = f'wsl bash -c "cd {wsl_dir} && python3 runner/podman/deploy.py"'
-        exit_code = subprocess.call(bridge_cmd, shell=True)
+        exit_code = subprocess.call(["wsl", "bash", "-c", f"cd '{wsl_dir}' && python3 runner/podman/deploy.py"])
         sys.exit(exit_code)
 
     print_error("Neither Podman for Windows nor WSL2 was found.")
     print("Please install Podman Desktop (https://podman-desktop.io) or WSL2 (wsl --install).")
     sys.exit(1)
 
+def configure_wsl_podman():
+    """Ensure cgroup_manager is set to cgroupfs for rootless WSL2 environments."""
+    if not is_wsl():
+        return
+    try:
+        conf_dir = os.path.expanduser("~/.config/containers")
+        os.makedirs(conf_dir, exist_ok=True)
+        conf_file = os.path.join(conf_dir, "containers.conf")
+        content = ""
+        if os.path.exists(conf_file):
+            with open(conf_file, "r", encoding="utf-8", errors="ignore") as f:
+                content = f.read()
+        if "cgroup_manager" not in content:
+            with open(conf_file, "a" if content else "w", encoding="utf-8") as f:
+                if content and not content.endswith("\n"):
+                    f.write("\n")
+                f.write("[engine]\ncgroup_manager = \"cgroupfs\"\nevents_logger = \"file\"\n")
+            print_success("Configured rootless Podman to use cgroupfs in WSL2.")
+    except Exception as e:
+        print_warn(f"Could not configure ~/.config/containers/containers.conf: {e}")
+
 def check_and_install_podman():
     """Verify podman is available; attempt self-healing install if running on Linux/WSL."""
+    configure_wsl_podman()
     print_step("Checking Podman installation...")
     code, out = run_cmd("podman --version", fail_on_error=False)
     if code == 0:
@@ -195,76 +247,143 @@ def get_compose_command():
     print("Install it via: pip3 install podman-compose")
     sys.exit(1)
 
-def ensure_env_file(config_dir):
-    """Generate cryptographically secure secrets in podman/.env.podman if not already set."""
-    print_step("Configuring environment variables...")
-    env_path = os.path.join(config_dir, ".env.podman")
+def get_db_password(config_dir):
+    """Return a stable DB password — reuse the one already in podman/.env or podman/.env.podman if present,
+    otherwise generate a fresh random one. Never use a hardcoded default (mirrors runner/host/deploy.py)."""
+    for fname in [".env", ".env.podman"]:
+        env_file = os.path.join(config_dir, fname)
+        if os.path.exists(env_file):
+            try:
+                with open(env_file, "r", encoding="utf-8", errors="ignore") as f:
+                    content = f.read()
+                m = re.search(r'POSTGRES_PASSWORD=[\'"]?([^\r\n\'"]+)', content)
+                if m and not m.group(1).startswith("replace_"):
+                    return m.group(1)
+                m2 = re.search(r'postgresql://strix_user:([^@]+)@', content)
+                if m2 and not m2.group(1).startswith("replace_"):
+                    return m2.group(1)
+            except Exception:
+                pass
+    return secrets.token_urlsafe(24)
+
+def setup_podman_environment(config_dir):
+    """Automatically resolve, generate, and synchronize environment variables and secrets for Podman.
+    Mirrors the exact self-healing pattern of runner/host/deploy.py (zero manual configuration)."""
+    print_step("Setting up Podman Environment Configuration...")
     
-    # Check for legacy .env.podman in project root and migrate if present
-    root_env_path = os.path.join(get_project_root(), ".env.podman")
-    if not os.path.exists(env_path) and os.path.exists(root_env_path):
+    db_pass = get_db_password(config_dir)
+    env_file = os.path.join(config_dir, ".env")
+    env_podman_file = os.path.join(config_dir, ".env.podman")
+
+    # If host .env exists, optionally reuse existing session secrets for seamless switching
+    host_env_file = os.path.join(get_project_root(), "strix-dashboard", ".env")
+    inherited_session_secret = None
+    inherited_scheduler_secret = None
+    if os.path.exists(host_env_file):
         try:
-            import shutil
-            shutil.copyfile(root_env_path, env_path)
-            print_success("Migrated existing root .env.podman into podman/.env.podman")
+            with open(host_env_file, "r", encoding="utf-8", errors="ignore") as f:
+                c = f.read()
+            m_sess = re.search(r'SESSION_SECRET=[\'"]?([^\r\n\'"]+)', c)
+            if m_sess: inherited_session_secret = m_sess.group(1)
+            m_sched = re.search(r'SCHEDULER_SECRET=[\'"]?([^\r\n\'"]+)', c)
+            if m_sched: inherited_scheduler_secret = m_sched.group(1)
         except Exception:
             pass
 
-    env_vars = {}
-    if os.path.exists(env_path):
-        with open(env_path, "r") as f:
-            for line in f:
-                line = line.strip()
-                if line and not line.startswith("#") and "=" in line:
-                    k, v = line.split("=", 1)
-                    env_vars[k.strip()] = v.strip().strip('"').strip("'")
+    # Check which file currently exists
+    target_file = env_file if os.path.exists(env_file) else (env_podman_file if os.path.exists(env_podman_file) else None)
 
-    needs_save = False
-    
-    if "POSTGRES_USER" not in env_vars:
-        env_vars["POSTGRES_USER"] = "strix_user"
-        needs_save = True
-
-    if "POSTGRES_PASSWORD" not in env_vars or env_vars["POSTGRES_PASSWORD"].startswith("replace_"):
-        env_vars["POSTGRES_PASSWORD"] = secrets.token_urlsafe(24)
-        needs_save = True
-
-    if "POSTGRES_DB" not in env_vars:
-        env_vars["POSTGRES_DB"] = "strix"
-        needs_save = True
-
-    if "SESSION_SECRET" not in env_vars or env_vars["SESSION_SECRET"].startswith("replace_"):
-        env_vars["SESSION_SECRET"] = secrets.token_hex(32)
-        needs_save = True
-
-    if "SCHEDULER_SECRET" not in env_vars or env_vars["SCHEDULER_SECRET"].startswith("replace_"):
-        env_vars["SCHEDULER_SECRET"] = secrets.token_hex(32)
-        needs_save = True
-
-    if "PORT" not in env_vars:
-        env_vars["PORT"] = "48080"
-        needs_save = True
-
-    if "INSECURE_HTTP" not in env_vars:
-        env_vars["INSECURE_HTTP"] = "true"
-        needs_save = True
-
-    if needs_save or not os.path.exists(env_path):
-        with open(env_path, "w") as f:
-            f.write("# Project Strix — Podman Auto-Generated Secrets\n")
-            for k, v in env_vars.items():
-                f.write(f"{k}={v}\n")
-        print_success("Created/updated podman/.env.podman with fresh cryptographically secure credentials.")
+    if not target_file:
+        print("Creating .env file with randomly generated secrets...")
+        session_secret = inherited_session_secret or secrets.token_hex(32)
+        scheduler_secret = inherited_scheduler_secret or secrets.token_hex(32)
+        content = (
+            "# Project Strix -- Podman Auto-Generated Secrets\n"
+            f"POSTGRES_USER=\"strix_user\"\n"
+            f"POSTGRES_PASSWORD=\"{db_pass}\"\n"
+            f"POSTGRES_DB=\"strix\"\n"
+            f"DATABASE_URL=\"postgresql://strix_user:{db_pass}@strix-db:5432/strix?schema=public\"\n"
+            f"SESSION_SECRET=\"{session_secret}\"\n"
+            f"SCHEDULER_SECRET=\"{scheduler_secret}\"\n"
+            f"INSECURE_HTTP=true\n"
+            f"PORT=48080\n"
+        )
+        with open(env_file, "w", encoding="utf-8") as f:
+            f.write(content)
+        with open(env_podman_file, "w", encoding="utf-8") as f:
+            f.write(content)
+        print_success("Created podman/.env with randomly generated cryptographically secure credentials.")
     else:
-        print_success("Using existing configuration from podman/.env.podman.")
+        with open(target_file, "r", encoding="utf-8", errors="ignore") as f:
+            content = f.read()
 
+        # Ensure POSTGRES_USER exists
+        if "POSTGRES_USER=" not in content:
+            content += 'POSTGRES_USER="strix_user"\n'
+
+        # Ensure POSTGRES_PASSWORD exists
+        if "POSTGRES_PASSWORD=" not in content or "replace_" in content:
+            content = re.sub(r'POSTGRES_PASSWORD=.*', f'POSTGRES_PASSWORD="{db_pass}"', content)
+            if "POSTGRES_PASSWORD=" not in content:
+                content += f'POSTGRES_PASSWORD="{db_pass}"\n'
+
+        # Ensure POSTGRES_DB exists
+        if "POSTGRES_DB=" not in content:
+            content += 'POSTGRES_DB="strix"\n'
+
+        # Ensure DATABASE_URL exists and matches current DB password
+        db_url = f'DATABASE_URL="postgresql://strix_user:{db_pass}@strix-db:5432/strix?schema=public"'
+        if "DATABASE_URL=" in content:
+            content = re.sub(r'DATABASE_URL=.*', db_url, content)
+        else:
+            content += f"{db_url}\n"
+
+        # Ensure SESSION_SECRET exists (required for auth)
+        if "SESSION_SECRET=" not in content or "replace_" in content:
+            new_sess = inherited_session_secret or secrets.token_hex(32)
+            content = re.sub(r'SESSION_SECRET=.*', f'SESSION_SECRET="{new_sess}"', content)
+            if "SESSION_SECRET=" not in content:
+                content += f'SESSION_SECRET="{new_sess}"\n'
+            print("Generated missing SESSION_SECRET.")
+
+        # Ensure SCHEDULER_SECRET exists (required for scheduled scans)
+        if "SCHEDULER_SECRET=" not in content or "replace_" in content:
+            new_sched = inherited_scheduler_secret or secrets.token_hex(32)
+            content = re.sub(r'SCHEDULER_SECRET=.*', f'SCHEDULER_SECRET="{new_sched}"', content)
+            if "SCHEDULER_SECRET=" not in content:
+                content += f'SCHEDULER_SECRET="{new_sched}"\n'
+            print("Generated missing SCHEDULER_SECRET.")
+
+        # Ensure PORT is set
+        if "PORT=" not in content:
+            content += "PORT=48080\n"
+
+        # Ensure INSECURE_HTTP is set
+        if "INSECURE_HTTP=" not in content:
+            content += "INSECURE_HTTP=true\n"
+
+        # Write to both .env (default for compose) and .env.podman
+        with open(env_file, "w", encoding="utf-8") as f:
+            f.write(content)
+        with open(env_podman_file, "w", encoding="utf-8") as f:
+            f.write(content)
+        print_success("Verified and synchronized Podman environment configuration.")
+
+    # Parse and return dictionary for subprocess environment
+    env_vars = {}
+    with open(env_file, "r", encoding="utf-8", errors="ignore") as f:
+        for line in f:
+            line = line.strip()
+            if line and not line.startswith("#") and "=" in line:
+                k, v = line.split("=", 1)
+                env_vars[k.strip()] = v.strip().strip('"').strip("'")
     return env_vars
 
 def deploy_containers(config_dir, compose_cmd, env_vars):
     """Build and deploy containers using the compose file in podman/."""
     print_step("Deploying Strix via Podman Compose...")
     compose_file = os.path.join(config_dir, "podman-compose.yml")
-    env_file = os.path.join(config_dir, ".env.podman")
+    env_file = os.path.join(config_dir, ".env")
 
     env = os.environ.copy()
     env.update(env_vars)
@@ -326,7 +445,7 @@ def main():
     # 2. Linux / WSL execution
     check_and_install_podman()
     compose_cmd = get_compose_command()
-    env_vars = ensure_env_file(config_dir)
+    env_vars = setup_podman_environment(config_dir)
     deploy_containers(config_dir, compose_cmd, env_vars)
 
     port = env_vars.get("PORT", "48080")

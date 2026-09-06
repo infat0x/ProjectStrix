@@ -8,9 +8,9 @@ This encapsulates the Next.js frontend/backend, the embedded background schedule
 
 ## ⚡ 1-Click Automated Deployment (Recommended)
 
-We provide an idempotent, self-healing Python orchestrator script that:
-1. Verifies/installs Podman and Compose tools.
-2. Automatically generates cryptographically secure passwords and JWT secrets in `.env.podman`.
+We provide an idempotent, self-healing Python orchestrator script that mirrors the native host deployer:
+1. Verifies and auto-installs Podman and Compose tools.
+2. **Zero-Touch Environment Resolution**: Automatically generates cryptographically secure database passwords, `SESSION_SECRET`, and `SCHEDULER_SECRET` into `podman/.env` (reusing existing secrets if present). No manual `.env` editing is required.
 3. Builds the production multi-stage image (including Node.js 20, Python 3, and the Strix CLI).
 4. Synchronizes database schemas and starts the stack on port `48080`.
 

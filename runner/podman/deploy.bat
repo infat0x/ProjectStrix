@@ -1,6 +1,7 @@
 @echo off
-REM Project Strix — 1-Click Podman Deployment (Windows Batch)
+REM Project Strix -- 1-Click Podman Deployment (Windows Batch)
 setlocal
+set PYTHONUNBUFFERED=1
 
 cd /d "%~dp0\..\.."
 
