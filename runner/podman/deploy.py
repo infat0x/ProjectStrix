@@ -136,8 +136,21 @@ def configure_wsl_podman():
                     f.write("\n")
                 f.write("[engine]\ncgroup_manager = \"cgroupfs\"\nevents_logger = \"file\"\n")
             print_success("Configured rootless Podman to use cgroupfs in WSL2.")
+
+        # Ensure unqualified search registries are configured so short image names resolve in Podman
+        reg_file = os.path.join(conf_dir, "registries.conf")
+        reg_content = ""
+        if os.path.exists(reg_file):
+            with open(reg_file, "r", encoding="utf-8", errors="ignore") as f:
+                reg_content = f.read()
+        if "unqualified-search-registries" not in reg_content:
+            with open(reg_file, "a" if reg_content else "w", encoding="utf-8") as f:
+                if reg_content and not reg_content.endswith("\n"):
+                    f.write("\n")
+                f.write('unqualified-search-registries = ["docker.io"]\n')
+            print_success("Configured unqualified-search-registries in ~/.config/containers/registries.conf.")
     except Exception as e:
-        print_warn(f"Could not configure ~/.config/containers/containers.conf: {e}")
+        print_warn(f"Could not configure ~/.config/containers: {e}")
 
 def check_and_install_podman():
     """Verify podman is available; attempt self-healing install if running on Linux/WSL."""

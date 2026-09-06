@@ -1,6 +1,6 @@
 # Production Dockerfile for Project Strix (Dashboard + AI Pentest Engine)
 # Build Context: Project Root (..)
-FROM node:20-bookworm-slim
+FROM docker.io/library/node:20-bookworm-slim
 
 # 1. System packages: Python 3, venv, git, curl, ca-certificates, postgresql-client
 RUN apt-get update && apt-get install -y --no-install-recommends \

@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   strix-db:
-    image: postgres:16-alpine
+    image: docker.io/library/postgres:16-alpine
     container_name: strix-postgres
     restart: unless-stopped
     environment:
@@ -26,8 +26,7 @@ services:
     container_name: strix-dashboard
     restart: unless-stopped
     depends_on:
-      strix-db:
-        condition: service_healthy
+      - strix-db
     ports:
       - "${PORT:-48080}:48080"
     environment:
