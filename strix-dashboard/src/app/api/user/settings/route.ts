@@ -24,6 +24,9 @@ export async function GET(req: NextRequest) {
         maxThreads: 4, 
         slackBotToken: "", 
         slackChannelId: "",
+        discordWebhookUrl: "",
+        telegramBotToken: "",
+        telegramChatId: "",
         notifyOnStart: false, 
         notifyOnFinish: true,
         theme: "dark",
@@ -57,6 +60,9 @@ export async function POST(req: NextRequest) {
       const maxThreads = clamp(d.maxThreads, 1, 32, 4);
       const slackBotToken = typeof d.slackBotToken === "string" ? d.slackBotToken.trim().slice(0, 255) : "";
       const slackChannelId = typeof d.slackChannelId === "string" ? d.slackChannelId.trim().slice(0, 100) : "";
+      const discordWebhookUrl = typeof d.discordWebhookUrl === "string" ? d.discordWebhookUrl.trim().slice(0, 500) : "";
+      const telegramBotToken = typeof d.telegramBotToken === "string" ? d.telegramBotToken.trim().slice(0, 255) : "";
+      const telegramChatId = typeof d.telegramChatId === "string" ? d.telegramChatId.trim().slice(0, 100) : "";
       const notifyOnStart = !!d.notifyOnStart;
       const notifyOnFinish = !!d.notifyOnFinish;
 
@@ -67,11 +73,15 @@ export async function POST(req: NextRequest) {
       const settings = await prisma.userSettings.upsert({
         where: { userId },
         create: { 
-          userId, aggressiveness, maxThreads, slackBotToken, slackChannelId, notifyOnStart, notifyOnFinish,
+          userId, aggressiveness, maxThreads, slackBotToken, slackChannelId,
+          discordWebhookUrl, telegramBotToken, telegramChatId,
+          notifyOnStart, notifyOnFinish,
           theme, defaultModel, autoDeleteDays
         },
         update: { 
-          aggressiveness, maxThreads, slackBotToken, slackChannelId, notifyOnStart, notifyOnFinish,
+          aggressiveness, maxThreads, slackBotToken, slackChannelId,
+          discordWebhookUrl, telegramBotToken, telegramChatId,
+          notifyOnStart, notifyOnFinish,
           theme, defaultModel, autoDeleteDays
         }
       });

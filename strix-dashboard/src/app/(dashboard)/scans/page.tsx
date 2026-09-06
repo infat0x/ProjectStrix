@@ -254,6 +254,8 @@ function ScansContent() {
     maxTurns: "",
     resumeRun: "",
     overrideLlm: false,
+    authHeaders: "",
+    excludePaths: "",
   });
 
   function fetchScans() {
@@ -1024,6 +1026,34 @@ function ScansContent() {
                         value={form.scheduledAt}
                         onChange={(e) => setForm({ ...form, scheduledAt: e.target.value })}
                       />
+                    </div>
+
+                    <div className="field">
+                      <label className="field-label">Authentication Headers & Cookies (Optional)</label>
+                      <textarea
+                        className="field-input"
+                        style={{ minHeight: 52, resize: "vertical", fontFamily: "var(--font-mono)", fontSize: 12 }}
+                        placeholder={"Cookie: session=xyz123...\nAuthorization: Bearer eyJhbGciOi..."}
+                        value={form.authHeaders}
+                        onChange={(e) => setForm({ ...form, authHeaders: e.target.value })}
+                      />
+                      <span style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 2, display: "block" }}>
+                        Injected into HTTP requests to assess protected dashboards, authenticated IDORs, and access controls.
+                      </span>
+                    </div>
+
+                    <div className="field">
+                      <label className="field-label">Out-of-Scope Paths & URL Exclusions (Optional)</label>
+                      <textarea
+                        className="field-input"
+                        style={{ minHeight: 52, resize: "vertical", fontFamily: "var(--font-mono)", fontSize: 12 }}
+                        placeholder={"/logout\n/admin/delete-account\nhttps://billing.stripe.com"}
+                        value={form.excludePaths}
+                        onChange={(e) => setForm({ ...form, excludePaths: e.target.value })}
+                      />
+                      <span style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 2, display: "block" }}>
+                        Endpoints or domains the AI pentest engine must strictly avoid touching.
+                      </span>
                     </div>
                     
                     <div className="field-grid">

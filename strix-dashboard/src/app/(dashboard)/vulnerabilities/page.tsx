@@ -18,6 +18,7 @@ interface Vulnerability {
   poc_script_code?: string;
   cvss?: number;
   remediation?: string;
+  status?: "OPEN" | "CONFIRMED" | "RESOLVED" | "FALSE_POSITIVE";
 }
 
 interface Scan {
@@ -34,6 +35,14 @@ interface VulnWithScan extends Vulnerability {
 
 const SEVERITY_ORDER = { critical: 0, high: 1, medium: 2, low: 3, informative: 4, info: 4 };
 const SEVERITIES = ["all", "critical", "high", "medium", "low", "informative"] as const;
+const STATUS_OPTIONS = ["ALL", "OPEN", "CONFIRMED", "RESOLVED", "FALSE_POSITIVE"] as const;
+
+export const STATUS_CONFIG: Record<string, { bg: string; color: string; border: string; label: string }> = {
+  OPEN: { bg: "rgba(245, 158, 11, 0.12)", color: "#f59e0b", border: "rgba(245, 158, 11, 0.28)", label: "Open" },
+  CONFIRMED: { bg: "rgba(239, 68, 68, 0.15)", color: "#ef4444", border: "rgba(239, 68, 68, 0.3)", label: "Confirmed" },
+  RESOLVED: { bg: "rgba(16, 185, 129, 0.12)", color: "#10b981", border: "rgba(16, 185, 129, 0.28)", label: "Resolved" },
+  FALSE_POSITIVE: { bg: "rgba(148, 163, 184, 0.12)", color: "#94a3b8", border: "rgba(148, 163, 184, 0.25)", label: "False Positive" },
+};
 
 function sevClass(s: string) {
   const normalized = s.toLowerCase() === "info" ? "informative" : s.toLowerCase();
@@ -44,10 +53,13 @@ export default function VulnerabilitiesPage() {
   const [allVulns, setAllVulns] = useState<VulnWithScan[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState<(typeof SEVERITIES)[number]>("all");
+  const [statusFilter, setStatusFilter] = useState<(typeof STATUS_OPTIONS)[number]>("ALL");
   const [search, setSearch] = useState("");
   const [filterProject, setFilterProject] = useState("all");
   const [showFilters, setShowFilters] = useState(false);
   const [selected, setSelected] = useState<VulnWithScan | null>(null);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
+  const [copiedReport, setCopiedReport] = useState(false);
 
   const [selectionMode, setSelectionMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
@@ -115,8 +127,65 @@ export default function VulnerabilitiesPage() {
     setSelectedIds(newSet);
   };
 
+  async function handleUpdateStatus(vulnId: string, newStatus: string) {
+    setUpdatingStatus(true);
+    try {
+      const res = await fetch(`/api/vulnerabilities/${vulnId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: newStatus }),
+      });
+      if (res.ok) {
+        setAllVulns((prev) =>
+          prev.map((v) => (v.id === vulnId ? { ...v, status: newStatus as any } : v))
+        );
+        if (selected && selected.id === vulnId) {
+          setSelected((prev) => (prev ? { ...prev, status: newStatus as any } : null));
+        }
+      } else {
+        const d = await res.json();
+        alert(d.error || "Failed to update status");
+      }
+    } catch (e: any) {
+      alert(e.message || "Failed to update status");
+    } finally {
+      setUpdatingStatus(false);
+    }
+  }
+
+  function copyBugBountyReport(v: VulnWithScan) {
+    const report = `## Vulnerability Title:
+${v.title}
+
+## Target / Asset:
+${v.scanTarget}
+
+## Severity & CVSS:
+- **Severity:** ${v.severity.toUpperCase()}${v.cvss ? ` (CVSS ${v.cvss})` : ""}
+- **Endpoint:** \`${v.method || "GET"} ${v.endpoint}\`
+- **Status:** ${v.status || "OPEN"}
+
+## Summary / Description:
+${v.description}
+
+## Steps to Reproduce / Proof of Concept:
+${v.poc_description ? `${v.poc_description}\n\n` : ""}${v.poc_script_code ? `\`\`\`bash\n${v.poc_script_code}\n\`\`\`\n\n` : ""}${v.poc && !v.poc_script_code ? `\`\`\`text\n${v.poc}\n\`\`\`\n\n` : ""}
+
+## Impact:
+An attacker exploiting this flaw at \`${v.endpoint}\` can compromise integrity and confidentiality of the targeted system.
+
+## Remediation:
+${v.remediation || "Enforce strict input validation, authorization checks, and defense-in-depth sanitization."}
+`;
+
+    navigator.clipboard.writeText(report.trim());
+    setCopiedReport(true);
+    setTimeout(() => setCopiedReport(false), 2500);
+  }
+
   const filtered = allVulns.filter((v) => {
     if (filter !== "all" && v.severity !== filter) return false;
+    if (statusFilter !== "ALL" && (v.status || "OPEN").toUpperCase() !== statusFilter) return false;
     if (filterProject !== "all" && v.scanTarget !== filterProject) return false;
     if (
       search &&
@@ -285,6 +354,34 @@ export default function VulnerabilitiesPage() {
                 </button>
               ))}
             </div>
+
+            {/* Status Filter Tabs */}
+            <div style={{ display: "flex", gap: 4, flexWrap: "wrap", paddingTop: 4, borderTop: "1px solid rgba(255,255,255,0.04)" }}>
+              {STATUS_OPTIONS.map((st) => {
+                const conf = STATUS_CONFIG[st] || { color: "var(--fg-2)", label: st === "ALL" ? "All Statuses" : st };
+                const count = st === "ALL" ? allVulns.length : allVulns.filter(v => (v.status || "OPEN").toUpperCase() === st).length;
+                return (
+                  <button
+                    key={st}
+                    onClick={() => setStatusFilter(st)}
+                    style={{
+                      padding: "2px 8px",
+                      borderRadius: "var(--r-sm)",
+                      fontSize: 10.5,
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      border: "1px solid",
+                      borderColor: statusFilter === st ? (conf.border || "var(--border-hi)") : "var(--border)",
+                      background: statusFilter === st ? (conf.bg || "var(--bg-3)") : "transparent",
+                      color: statusFilter === st ? (conf.color || "var(--fg)") : "var(--fg-3)",
+                      transition: "all 0.15s",
+                    }}
+                  >
+                    {conf.label} ({count})
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Items */}
@@ -317,6 +414,9 @@ export default function VulnerabilitiesPage() {
                 {filtered.map((v) => {
                   const uniqueId = `${v.scanId}::${v.id}`;
                   const isSelected = selectedIds.has(uniqueId) || (selected?.id === v.id && selected.scanId === v.scanId);
+                  const curStatus = (v.status || "OPEN").toUpperCase();
+                  const sConf = STATUS_CONFIG[curStatus] || STATUS_CONFIG.OPEN;
+
                   return (
                   <div
                     key={uniqueId}
@@ -365,7 +465,24 @@ export default function VulnerabilitiesPage() {
                     </div>
                   </div>
                   <div className="trow-right" style={{ flexDirection: "column", alignItems: "flex-end", gap: 4 }}>
-                    <span className={sevClass(v.severity)}>{v.severity}</span>
+                    <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                      <span
+                        style={{
+                          fontSize: 10,
+                          fontWeight: 600,
+                          padding: "1px 6px",
+                          borderRadius: 4,
+                          background: sConf.bg,
+                          color: sConf.color,
+                          border: `1px solid ${sConf.border}`,
+                          textTransform: "uppercase",
+                          letterSpacing: "0.5px"
+                        }}
+                      >
+                        {sConf.label}
+                      </span>
+                      <span className={sevClass(v.severity)}>{v.severity}</span>
+                    </div>
                     {v.cvss && (
                       <span style={{ fontSize: 10, color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}>
                         CVSS {v.cvss}
@@ -394,39 +511,91 @@ export default function VulnerabilitiesPage() {
         >
           {selected ? (
             <>
-              {/* Detail header */}
               <div
                 style={{
                   display: "flex",
                   alignItems: "center",
                   justifyContent: "space-between",
-                  padding: "16px 20px",
+                  padding: "12px 18px",
                   background: `var(--sev-${selected.severity}-bg)`,
                   borderBottom: `1px solid var(--sev-${selected.severity}-bd)`,
+                  flexWrap: "wrap",
+                  gap: 10
                 }}
               >
-                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
                   <span className={sevClass(selected.severity)}>{selected.severity}</span>
                   {selected.cvss && (
                     <span style={{ fontSize: 11, color: "var(--fg-3)", fontFamily: "var(--font-mono)" }}>
                       CVSS {selected.cvss}
                     </span>
                   )}
+
+                  {/* Status Dropdown */}
+                  <div style={{ display: "flex", alignItems: "center", gap: 6, marginLeft: 6 }}>
+                    <span style={{ fontSize: 11, color: "var(--fg-3)", fontWeight: 500 }}>Status:</span>
+                    <select
+                      value={(selected.status || "OPEN").toUpperCase()}
+                      onChange={(e) => handleUpdateStatus(selected.id, e.target.value)}
+                      disabled={updatingStatus}
+                      style={{
+                        padding: "2px 8px",
+                        fontSize: 11,
+                        fontWeight: 600,
+                        borderRadius: "var(--r-sm)",
+                        background: "var(--bg-1)",
+                        color: (STATUS_CONFIG[(selected.status || "OPEN").toUpperCase()] || STATUS_CONFIG.OPEN).color,
+                        border: `1px solid ${(STATUS_CONFIG[(selected.status || "OPEN").toUpperCase()] || STATUS_CONFIG.OPEN).border}`,
+                        cursor: "pointer",
+                        outline: "none"
+                      }}
+                    >
+                      <option value="OPEN">Open</option>
+                      <option value="CONFIRMED">Confirmed</option>
+                      <option value="RESOLVED">Resolved</option>
+                      <option value="FALSE_POSITIVE">False Positive</option>
+                    </select>
+                  </div>
                 </div>
-                <button
-                  onClick={() => setSelected(null)}
-                  style={{
-                    background: "none",
-                    border: "none",
-                    color: "var(--fg-3)",
-                    cursor: "pointer",
-                    display: "flex",
-                    padding: 4,
-                    borderRadius: "var(--r-sm)",
-                  }}
-                >
-                  <X size={16} />
-                </button>
+
+                <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                  <button
+                    onClick={() => copyBugBountyReport(selected)}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                      background: "rgba(255,255,255,0.06)",
+                      border: "1px solid rgba(255,255,255,0.12)",
+                      color: copiedReport ? "var(--sev-low)" : "var(--fg)",
+                      padding: "4px 10px",
+                      borderRadius: "var(--r-sm)",
+                      fontSize: 11.5,
+                      fontWeight: 500,
+                      cursor: "pointer",
+                      transition: "all 0.2s"
+                    }}
+                    title="Export formatted disclosure report for HackerOne or Bugcrowd"
+                  >
+                    {copiedReport ? <Check size={13} /> : <Copy size={13} />}
+                    {copiedReport ? "Copied Report!" : "Copy for Bug Bounty (H1)"}
+                  </button>
+
+                  <button
+                    onClick={() => setSelected(null)}
+                    style={{
+                      background: "none",
+                      border: "none",
+                      color: "var(--fg-3)",
+                      cursor: "pointer",
+                      display: "flex",
+                      padding: 4,
+                      borderRadius: "var(--r-sm)",
+                    }}
+                  >
+                    <X size={16} />
+                  </button>
+                </div>
               </div>
 
               {/* Detail body */}

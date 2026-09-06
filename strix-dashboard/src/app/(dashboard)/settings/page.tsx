@@ -15,7 +15,15 @@ export default function Settings() {
   const [keys, setKeys] = useState({ openai: "", anthropic: "", gemini: "", deepseek: "", groq: "", openrouter: "", mistral: "", cohere: "", dashscope: "", moonshot: "", vertex_ai: "" });
   const [customModels, setCustomModels] = useState<{value: string, label: string, url?: string, apiKey?: string, testStatus?: "idle" | "loading" | "success" | "error", testMsg?: string}[]>([]);
   const [agentConfig, setAgentConfig] = useState({ aggressiveness: 50, maxThreads: 4 });
-  const [notificationConfig, setNotificationConfig] = useState({ slackBotToken: "", slackChannelId: "", notifyOnStart: false, notifyOnFinish: true });
+  const [notificationConfig, setNotificationConfig] = useState({ 
+    slackBotToken: "", 
+    slackChannelId: "", 
+    discordWebhookUrl: "", 
+    telegramBotToken: "", 
+    telegramChatId: "", 
+    notifyOnStart: false, 
+    notifyOnFinish: true 
+  });
   const [preferencesConfig, setPreferencesConfig] = useState({ theme: "dark", defaultModel: "openai/gpt-4o", autoDeleteDays: 0 });
   const [saved, setSaved] = useState(false);
 
@@ -35,7 +43,15 @@ export default function Settings() {
         if (!data.error) {
           if (data.settings) {
             setAgentConfig({ aggressiveness: data.settings.aggressiveness, maxThreads: data.settings.maxThreads });
-            setNotificationConfig({ slackBotToken: data.settings.slackBotToken || "", slackChannelId: data.settings.slackChannelId || "", notifyOnStart: data.settings.notifyOnStart, notifyOnFinish: data.settings.notifyOnFinish });
+            setNotificationConfig({ 
+              slackBotToken: data.settings.slackBotToken || "", 
+              slackChannelId: data.settings.slackChannelId || "", 
+              discordWebhookUrl: data.settings.discordWebhookUrl || "",
+              telegramBotToken: data.settings.telegramBotToken || "",
+              telegramChatId: data.settings.telegramChatId || "",
+              notifyOnStart: data.settings.notifyOnStart, 
+              notifyOnFinish: data.settings.notifyOnFinish 
+            });
             setPreferencesConfig({ 
               theme: data.settings.theme || "dark", 
               defaultModel: data.settings.defaultModel || "openai/gpt-4o", 
@@ -424,6 +440,42 @@ export default function Settings() {
                     onChange={(e) => setNotificationConfig({ ...notificationConfig, slackChannelId: e.target.value })}
                   />
                   <span style={s.hint}>Right click a channel in Slack -› Copy Link. The Channel ID is the last part of the URL.</span>
+                </div>
+
+                <div style={{ ...s.field, marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+                  <label style={s.label}>Discord Webhook URL</label>
+                  <input
+                    style={s.input}
+                    type="password"
+                    placeholder="https://discord.com/api/webhooks/..."
+                    value={notificationConfig.discordWebhookUrl}
+                    onChange={(e) => setNotificationConfig({ ...notificationConfig, discordWebhookUrl: e.target.value })}
+                  />
+                  <span style={s.hint}>Discord Server Settings -› Integrations -› Webhooks -› Copy Webhook URL. Rich crimson embeds will be posted here.</span>
+                </div>
+
+                <div style={{ ...s.field, marginTop: 18, borderTop: "1px solid var(--border)", paddingTop: 16 }}>
+                  <label style={s.label}>Telegram Bot Token</label>
+                  <input
+                    style={s.input}
+                    type="password"
+                    placeholder="123456789:ABCdefGhIJKlmNoPQRstuVWXyz"
+                    value={notificationConfig.telegramBotToken}
+                    onChange={(e) => setNotificationConfig({ ...notificationConfig, telegramBotToken: e.target.value })}
+                  />
+                  <span style={s.hint}>Obtain a bot token from @BotFather on Telegram.</span>
+                </div>
+
+                <div style={{ ...s.field, marginTop: 12 }}>
+                  <label style={s.label}>Telegram Chat ID</label>
+                  <input
+                    style={s.input}
+                    type="text"
+                    placeholder="e.g. -1001234567890 or 987654321"
+                    value={notificationConfig.telegramChatId}
+                    onChange={(e) => setNotificationConfig({ ...notificationConfig, telegramChatId: e.target.value })}
+                  />
+                  <span style={s.hint}>Your personal chat ID or Telegram channel/group ID (obtain via @userinfobot).</span>
                 </div>
                 
                 <div style={{ ...s.field, flexDirection: "row", alignItems: "center", gap: 12, marginTop: 12 }}>

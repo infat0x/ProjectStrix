@@ -49,131 +49,191 @@ function ensureRunsDir() {
 }
 
 async function sendWebhookNotification(config: any, event: "start" | "finish", scanMeta: any, vulnCount: number = 0) {
-  if (!config || !config.slackBotToken || !config.slackChannelId) return;
-  
+  if (!config) return;
   if (event === "start" && !config.notifyOnStart) return;
   if (event === "finish" && !config.notifyOnFinish) return;
 
-  let blocks: any[] = [];
-  let fallbackText = "";
-  let color = "#36a64f";
+  // 1. SLACK NOTIFICATION
+  if (config.slackBotToken && config.slackChannelId) {
+    let blocks: any[] = [];
+    let fallbackText = "";
+    let color = "#36a64f";
 
-  if (event === "start") {
-    fallbackText = `🚀 Scan Started on ${scanMeta.target}`;
-    color = "#3498db";
-    blocks = [
-      {
-        type: "header",
-        text: { type: "plain_text", text: "🚀 Strix Scan Initiated", emoji: true }
-      },
-      {
-        type: "section",
-        fields: [
-          { type: "mrkdwn", text: `*Target:*\n\`${scanMeta.target}\`` },
-          { type: "mrkdwn", text: `*Mode:*\n${scanMeta.scanMode}` },
-          { type: "mrkdwn", text: `*Model:*\n${scanMeta.llmModel}` },
-          { type: "mrkdwn", text: `*Scan ID:*\n\`${scanMeta.id.slice(0, 8)}\`` }
-        ]
-      },
-      { type: "divider" },
-      {
+    if (event === "start") {
+      fallbackText = `🚀 Scan Started on ${scanMeta.target}`;
+      color = "#3498db";
+      blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: "🚀 Strix Scan Initiated", emoji: true }
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Target:*\n\`${scanMeta.target}\`` },
+            { type: "mrkdwn", text: `*Mode:*\n${scanMeta.scanMode}` },
+            { type: "mrkdwn", text: `*Model:*\n${scanMeta.llmModel}` },
+            { type: "mrkdwn", text: `*Scan ID:*\n\`${scanMeta.id.slice(0, 8)}\`` }
+          ]
+        },
+        { type: "divider" },
+        {
+          type: "context",
+          elements: [
+            { type: "mrkdwn", text: `🕒 Started at: ${new Date().toLocaleString()}` }
+          ]
+        }
+      ];
+    } else {
+      fallbackText = `🏁 Scan Finished on ${scanMeta.target} - ${vulnCount} vulns`;
+      color = scanMeta.status === "failed" ? "#e74c3c" : vulnCount > 0 ? "#f39c12" : "#2ecc71";
+      
+      let headerText = scanMeta.status === "failed" ? "❌ Scan Failed" : "✅ Scan Completed";
+      
+      blocks = [
+        {
+          type: "header",
+          text: { type: "plain_text", text: headerText, emoji: true }
+        },
+        {
+          type: "section",
+          fields: [
+            { type: "mrkdwn", text: `*Target:*\n\`${scanMeta.target}\`` },
+            { type: "mrkdwn", text: `*Status:*\n${(scanMeta.status || "COMPLETED").toUpperCase()}` },
+            { type: "mrkdwn", text: `*Vulnerabilities Found:*\n${vulnCount > 0 ? '🚨 *' + vulnCount + '*' : '✅ 0'}` },
+            { type: "mrkdwn", text: `*Scan ID:*\n\`${scanMeta.id.slice(0, 8)}\`` }
+          ]
+        }
+      ];
+
+      if (vulnCount > 0) {
+        blocks.push({
+          type: "section",
+          text: { type: "mrkdwn", text: `⚠️ *Action Required:* Vulnerabilities were detected on the target. Please review the detailed Strix report immediately.` }
+        });
+      }
+
+      blocks.push({ type: "divider" });
+      blocks.push({
         type: "context",
         elements: [
-          { type: "mrkdwn", text: `🕒 Started at: ${new Date().toLocaleString()}` }
+          { type: "mrkdwn", text: `🕒 Finished at: ${new Date().toLocaleString()}` }
         ]
-      }
-    ];
-  } else {
-    fallbackText = `🏁 Scan Finished on ${scanMeta.target} - ${vulnCount} vulns`;
-    color = scanMeta.status === "failed" ? "#e74c3c" : vulnCount > 0 ? "#f39c12" : "#2ecc71";
-    
-    let headerText = scanMeta.status === "failed" ? "❌ Scan Failed" : "✅ Scan Completed";
-    
-    blocks = [
-      {
-        type: "header",
-        text: { type: "plain_text", text: headerText, emoji: true }
-      },
-      {
-        type: "section",
-        fields: [
-          { type: "mrkdwn", text: `*Target:*\n\`${scanMeta.target}\`` },
-          { type: "mrkdwn", text: `*Status:*\n${scanMeta.status.toUpperCase()}` },
-          { type: "mrkdwn", text: `*Vulnerabilities Found:*\n${vulnCount > 0 ? '🚨 *' + vulnCount + '*' : '✅ 0'}` },
-          { type: "mrkdwn", text: `*Scan ID:*\n\`${scanMeta.id.slice(0, 8)}\`` }
-        ]
-      }
-    ];
-
-    if (vulnCount > 0) {
-      blocks.push({
-        type: "section",
-        text: { type: "mrkdwn", text: `⚠️ *Action Required:* Vulnerabilities were detected on the target. Please review the detailed Strix report immediately.` }
       });
     }
 
-    blocks.push({ type: "divider" });
-    blocks.push({
-      type: "context",
-      elements: [
-        { type: "mrkdwn", text: `🕒 Finished at: ${new Date().toLocaleString()}` }
+    const payload: any = {
+      channel: config.slackChannelId,
+      text: fallbackText,
+      attachments: [
+        {
+          color: color,
+          blocks: blocks
+        }
       ]
-    });
+    };
+
+    try {
+      let endpoint = "https://slack.com/api/chat.postMessage";
+      
+      if (event === "finish") {
+        const dbScan = await prisma.scan.findUnique({ 
+          where: { id: scanMeta.id }, 
+          select: { slackMessageTs: true } 
+        });
+        if (dbScan?.slackMessageTs) {
+          endpoint = "https://slack.com/api/chat.update";
+          payload.ts = dbScan.slackMessageTs;
+        }
+      }
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { 
+          "Content-Type": "application/json",
+          "Authorization": `Bearer ${config.slackBotToken}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        if (event === "start" && data.ts) {
+          await prisma.scan.update({
+            where: { id: scanMeta.id },
+            data: { slackMessageTs: data.ts }
+          });
+        }
+        log.info("SLACK", `Successfully sent ${event} notification to Slack`);
+      }
+    } catch (err: any) {
+      log.error("SLACK", `Error sending Slack notification`, err);
+    }
   }
 
-  const payload: any = {
-    channel: config.slackChannelId,
-    text: fallbackText,
-    attachments: [
-      {
-        color: color,
-        blocks: blocks
-      }
-    ]
-  };
+  // 2. DISCORD NOTIFICATION
+  if (config.discordWebhookUrl) {
+    try {
+      const isFailed = scanMeta.status === "failed";
+      const discordColor = event === "start" ? 0x3498db : (isFailed ? 0xe74c3c : (vulnCount > 0 ? 0xf39c12 : 0x2ecc71));
+      const discordTitle = event === "start" ? "🚀 Strix Scan Initiated" : (isFailed ? "❌ Strix Scan Failed" : "✅ Strix Scan Completed");
+      
+      const discordPayload = {
+        embeds: [
+          {
+            title: discordTitle,
+            color: discordColor,
+            fields: [
+              { name: "🎯 Target", value: `\`${scanMeta.target}\``, inline: true },
+              { name: "⚙️ Mode", value: scanMeta.scanMode || "standard", inline: true },
+              { name: "🤖 Model", value: scanMeta.llmModel || "default", inline: true },
+              { name: "📊 Status", value: (scanMeta.status || "RUNNING").toUpperCase(), inline: true },
+              { name: "🚨 Vulnerabilities", value: vulnCount > 0 ? `**${vulnCount}**` : "0 (Clean)", inline: true },
+              { name: "🆔 Scan ID", value: `\`${scanMeta.id.slice(0, 8)}\``, inline: true }
+            ],
+            footer: { text: "Project Strix Autonomous Security Orchestrator" },
+            timestamp: new Date().toISOString()
+          }
+        ]
+      };
 
-  try {
-    let endpoint = "https://slack.com/api/chat.postMessage";
-    
-    if (event === "finish") {
-      const dbScan = await prisma.scan.findUnique({ 
-        where: { id: scanMeta.id }, 
-        select: { slackMessageTs: true } 
-      });
-      if (dbScan?.slackMessageTs) {
-        endpoint = "https://slack.com/api/chat.update";
-        payload.ts = dbScan.slackMessageTs;
-      }
+      fetch(config.discordWebhookUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(discordPayload)
+      }).catch(err => log.error("DISCORD", "Failed to send Discord webhook", err));
+    } catch (err: any) {
+      log.error("DISCORD", "Error formatting Discord webhook", err);
     }
+  }
 
-    const res = await fetch(endpoint, {
-      method: "POST",
-      headers: { 
-        "Content-Type": "application/json",
-        "Authorization": `Bearer ${config.slackBotToken}`
-      },
-      body: JSON.stringify(payload)
-    });
+  // 3. TELEGRAM NOTIFICATION
+  if (config.telegramBotToken && config.telegramChatId) {
+    try {
+      const isFailed = scanMeta.status === "failed";
+      const tgIcon = event === "start" ? "🚀" : (isFailed ? "❌" : "✅");
+      const tgStatus = event === "start" ? "Scan Initiated" : `Scan ${isFailed ? "Failed" : "Completed"}`;
+      
+      const message = `${tgIcon} <b>Strix ${tgStatus}</b>\n\n` +
+        `🎯 <b>Target:</b> <code>${scanMeta.target}</code>\n` +
+        `⚙️ <b>Mode:</b> ${scanMeta.scanMode || "standard"}\n` +
+        `🤖 <b>Model:</b> ${scanMeta.llmModel || "default"}\n` +
+        `📊 <b>Status:</b> ${(scanMeta.status || "RUNNING").toUpperCase()}\n` +
+        `🚨 <b>Vulnerabilities:</b> ${vulnCount > 0 ? `<b>${vulnCount}</b>` : "0"}\n` +
+        `🆔 <b>Scan ID:</b> <code>${scanMeta.id.slice(0, 8)}</code>`;
 
-    if (!res.ok) {
-      log.warn("SLACK", `Failed to reach Slack API: ${res.status}`);
-      return;
+      fetch(`https://api.telegram.org/bot${config.telegramBotToken}/sendMessage`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          chat_id: config.telegramChatId,
+          text: message,
+          parse_mode: "HTML"
+        })
+      }).catch(err => log.error("TELEGRAM", "Failed to send Telegram alert", err));
+    } catch (err: any) {
+      log.error("TELEGRAM", "Error sending Telegram notification", err);
     }
-
-    const data = await res.json();
-    if (!data.ok) {
-      log.warn("SLACK", `Slack API returned error: ${data.error}`);
-    } else if (event === "start" && data.ts) {
-      await prisma.scan.update({
-        where: { id: scanMeta.id },
-        data: { slackMessageTs: data.ts }
-      });
-      log.info("SLACK", `Saved Slack message ts: ${data.ts}`);
-    } else {
-      log.info("SLACK", `Successfully sent ${event} notification to Slack`);
-    }
-  } catch (err: any) {
-    log.error("SLACK", `Error sending Slack notification`, err);
   }
 }
 
@@ -263,6 +323,8 @@ export async function POST(req: NextRequest) {
     maxTurns,
     resumeRun,
     overrideLlm,
+    authHeaders,
+    excludePaths,
   } = body;
 
   log.debug("POST /api/scans", "Scan parameters", {
@@ -474,6 +536,8 @@ export async function POST(req: NextRequest) {
     startedAt: new Date().toISOString(),
     finishedAt: null,
     exitCode: null,
+    authHeaders: authHeaders || "",
+    excludePaths: excludePaths || "",
   };
   if (!resumeRun) {
     fs.writeFileSync(runFile, JSON.stringify(runMeta, null, 2));
@@ -487,10 +551,17 @@ export async function POST(req: NextRequest) {
   }
   log.info("POST /api/scans", `Scan created/resumed`, { scanId, scanDir });
 
-  const userSettings = userExists.settings || { slackBotToken: "", slackChannelId: "", notifyOnStart: false, notifyOnFinish: true, aggressiveness: 50, maxThreads: 4 };
+  const userSettings = userExists.settings || { 
+    slackBotToken: "", slackChannelId: "", 
+    discordWebhookUrl: "", telegramBotToken: "", telegramChatId: "",
+    notifyOnStart: false, notifyOnFinish: true, aggressiveness: 50, maxThreads: 4 
+  };
   const notificationConfig = {
     slackBotToken: (userSettings as any).slackBotToken,
     slackChannelId: (userSettings as any).slackChannelId,
+    discordWebhookUrl: (userSettings as any).discordWebhookUrl,
+    telegramBotToken: (userSettings as any).telegramBotToken,
+    telegramChatId: (userSettings as any).telegramChatId,
     notifyOnStart: userSettings.notifyOnStart,
     notifyOnFinish: userSettings.notifyOnFinish
   };
@@ -533,7 +604,16 @@ export async function POST(req: NextRequest) {
     }
 
     if (scanMode) args.push("-m", scanMode);
-    if (instruction?.trim()) args.push("--instruction", instruction.trim());
+    
+    let effectiveInstruction = instruction?.trim() || "";
+    if (authHeaders?.trim()) {
+      effectiveInstruction += `\n\n[AUTHENTICATION / SESSION HEADERS]\nWhen communicating with the target, you MUST include the following HTTP headers / cookies in all your requests:\n${authHeaders.trim()}\n`;
+    }
+    if (excludePaths?.trim()) {
+      effectiveInstruction += `\n\n[STRICT SCOPE EXCLUSIONS]\nYou are STRICTLY FORBIDDEN from accessing, scanning, fuzzing, or attacking the following paths or endpoints. Completely ignore and skip these targets:\n${excludePaths.trim()}\n`;
+    }
+
+    if (effectiveInstruction.trim()) args.push("--instruction", effectiveInstruction.trim());
     
     if (scopeMode && scopeMode !== "auto") args.push("--scope-mode", scopeMode);
 

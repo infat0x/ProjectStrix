@@ -11,6 +11,7 @@ export interface Vulnerability {
   cvss?: number;
   remediation?: string;
   target?: string;
+  status?: string;
 }
 
 export interface ScanDetail {
