@@ -89,6 +89,11 @@ export default function Settings() {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [providerSearch, setProviderSearch] = useState("");
 
+  // Total configured keys count
+  const configuredCount = useMemo(() => {
+    return Object.values(keys).filter(k => typeof k === "string" && k.trim().length > 0).length;
+  }, [keys]);
+
   // Custom Models State
   const [customModels, setCustomModels] = useState<{
     value: string;
@@ -480,19 +485,19 @@ export default function Settings() {
   }, [PROVIDER_GROUPS, providerSearch]);
 
   return (
-    <div className="page" style={{ height: "100%", maxWidth: "none", paddingBottom: 40 }}>
+    <div className="page" style={{ minHeight: "100%", maxWidth: 1280, margin: "0 auto", paddingBottom: 60 }}>
       {/* Top Banner Header */}
-      <div className="page-intro" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14, marginBottom: 16 }}>
+      <div className="page-intro" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14, marginBottom: 18 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <span className="tag" style={{ background: "var(--bg-2)", border: "1px solid var(--border-md)", color: "var(--fg-2)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              Enterprise Governance
+              Platform Governance
             </span>
-            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>Hardware Encrypted · AES-256-GCM at Rest</span>
+            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>AES-256-GCM Keystore · Zero-Trust Encryption</span>
           </div>
           <h1 className="page-heading">Platform Settings & Orchestration</h1>
           <p className="page-desc">
-            Manage LLM inference engines, heuristic autonomous agent thresholds, network perimeter boundaries, and SIEM alert webhooks.
+            Configure inference engines, heuristic autonomous agent thresholds, network perimeter boundaries, and SIEM alert webhooks.
           </p>
         </div>
 
@@ -521,7 +526,7 @@ export default function Settings() {
             gap: 10,
             padding: "6px 12px",
             background: "var(--bg-1)",
-            border: "1px solid var(--border)",
+            border: "1px solid var(--border-md)",
             borderRadius: "var(--r)",
             fontSize: 12
           }}>
@@ -532,204 +537,230 @@ export default function Settings() {
         </div>
       </div>
 
-      {/* Main Settings Layout with Left Nav */}
-      <div style={{ display: "grid", gridTemplateColumns: "240px 1fr", gap: 20, flex: 1, minHeight: 0 }}>
-        {/* Sidebar Nav */}
-        <nav style={{ display: "flex", flexDirection: "column", gap: 3 }}>
-          {TABS.map(({ id, label, icon: Icon, desc }) => {
-            const isActive = activeTab === id;
-            return (
-              <button
-                key={id}
-                onClick={() => setActiveTab(id)}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  gap: 3,
-                  padding: "10px 14px",
-                  borderRadius: "var(--r)",
-                  border: `1px solid ${isActive ? "var(--border-hi)" : "transparent"}`,
-                  background: isActive ? "var(--bg-3)" : "transparent",
-                  color: isActive ? "var(--fg)" : "var(--fg-3)",
-                  cursor: "pointer",
-                  textAlign: "left",
-                  transition: "all 0.15s ease",
-                  width: "100%"
-                }}
-              >
-                <div style={{ display: "flex", alignItems: "center", gap: 8, width: "100%", fontSize: 13, fontWeight: 600, color: isActive ? "var(--fg)" : "var(--fg-2)" }}>
-                  <Icon size={15} style={{ opacity: isActive ? 1 : 0.7 }} />
-                  <span>{label}</span>
-                  {isActive && <ChevronRight size={12} style={{ marginLeft: "auto", opacity: 0.5 }} />}
+      {/* Horizontal Tab Navigation */}
+      <div style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 6,
+        overflowX: "auto",
+        paddingBottom: 10,
+        marginBottom: 20,
+        borderBottom: "1px solid var(--border)",
+        scrollbarWidth: "none"
+      }}>
+        {TABS.map(({ id, label, icon: Icon }) => {
+          const isActive = activeTab === id;
+          return (
+            <button
+              key={id}
+              onClick={() => setActiveTab(id)}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: 8,
+                padding: "8px 16px",
+                borderRadius: "var(--r)",
+                border: `1px solid ${isActive ? "var(--border-hi)" : "transparent"}`,
+                background: isActive ? "var(--bg-3)" : "transparent",
+                color: isActive ? "var(--fg)" : "var(--fg-3)",
+                fontSize: 13,
+                fontWeight: 600,
+                cursor: "pointer",
+                whiteSpace: "nowrap",
+                transition: "all 0.15s ease"
+              }}
+              onMouseOver={e => {
+                if (!isActive) {
+                  e.currentTarget.style.color = "var(--fg)";
+                  e.currentTarget.style.background = "var(--bg-2)";
+                }
+              }}
+              onMouseOut={e => {
+                if (!isActive) {
+                  e.currentTarget.style.color = "var(--fg-3)";
+                  e.currentTarget.style.background = "transparent";
+                }
+              }}
+            >
+              <Icon size={15} style={{ opacity: isActive ? 1 : 0.7 }} />
+              <span>{label}</span>
+              {id === "api" && configuredCount > 0 && (
+                <span style={{
+                  fontSize: 10.5,
+                  padding: "1px 7px",
+                  borderRadius: 10,
+                  background: isActive ? "var(--sev-low-bg)" : "var(--bg-2)",
+                  color: isActive ? "var(--sev-low)" : "var(--fg-3)",
+                  border: `1px solid ${isActive ? "var(--sev-low-bd)" : "var(--border)"}`
+                }}>
+                  {configuredCount} Active
+                </span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Full-Width Settings Panels */}
+      <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+        {/* ============================================================== */}
+        {/* TAB 1: LLM & INFERENCE ENGINES */}
+        {/* ============================================================== */}
+        {activeTab === "api" && (
+          <>
+            {/* Filter Bar & Header */}
+            <div className="card" style={{ padding: "16px 20px" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
+                <div>
+                  <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
+                    LLM Provider Credentials
+                  </h2>
+                  <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "4px 0 0" }}>
+                    Configure reasoning engines for autonomous pentesting, zero-day discovery, and verification.
+                  </p>
                 </div>
-                <span style={{ fontSize: 10.5, color: "var(--fg-3)", paddingLeft: 23 }}>{desc}</span>
-              </button>
-            );
-          })}
 
-          <div style={{ marginTop: "auto", padding: "14px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r)", display: "flex", flexDirection: "column", gap: 6 }}>
-            <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11, fontWeight: 600, color: "var(--fg-2)" }}>
-              <Shield size={13} style={{ color: "var(--sev-low)" }} /> Zero-Trust Keystore
-            </div>
-            <div style={{ fontSize: 10.5, color: "var(--fg-3)", lineHeight: 1.4 }}>
-              API keys are encrypted in PostgreSQL via AES-256-GCM hardware keys and decrypted strictly in memory at runtime.
-            </div>
-          </div>
-        </nav>
-
-        {/* Content Pane */}
-        <div style={{ display: "flex", flexDirection: "column", gap: 20, overflowY: "auto", paddingRight: 4 }}>
-          {/* ============================================================== */}
-          {/* TAB 1: LLM & INFERENCE ENGINES */}
-          {/* ============================================================== */}
-          {activeTab === "api" && (
-            <>
-              {/* Filter Bar & Header */}
-              <div className="card" style={{ padding: "16px 20px" }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 12 }}>
-                  <div>
-                    <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
-                      LLM Provider Credentials
-                    </h2>
-                    <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "4px 0 0" }}>
-                      Configure reasoning models for autonomous pentesting, zero-day discovery, and verification.
-                    </p>
-                  </div>
-
-                  <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
-                    <input
-                      type="text"
-                      placeholder="Filter provider (e.g. OpenAI, DeepSeek)..."
-                      value={providerSearch}
-                      onChange={e => setProviderSearch(e.target.value)}
-                      style={{
-                        padding: "6px 12px",
-                        background: "var(--bg-2)",
-                        border: "1px solid var(--border)",
-                        borderRadius: "var(--r-sm)",
-                        fontSize: 12,
-                        color: "var(--fg)",
-                        width: 240
-                      }}
-                    />
-                    <button className="btn-primary" onClick={() => handleSave("api")}>
-                      <Save size={13} /> Save Keys
-                    </button>
-                  </div>
+                <div style={{ display: "flex", gap: 10, alignItems: "center" }}>
+                  <input
+                    type="text"
+                    placeholder="Filter providers (e.g. OpenAI, DeepSeek)..."
+                    value={providerSearch}
+                    onChange={e => setProviderSearch(e.target.value)}
+                    style={{
+                      height: 38,
+                      padding: "0 12px",
+                      background: "var(--bg-2)",
+                      border: "1px solid var(--border-md)",
+                      borderRadius: "var(--r)",
+                      fontSize: 12.5,
+                      color: "var(--fg)",
+                      width: 260,
+                      outline: "none"
+                    }}
+                  />
+                  <button className="btn-primary" onClick={() => handleSave("api")} style={{ height: 38, padding: "0 16px", display: "flex", alignItems: "center", gap: 6 }}>
+                    <Save size={14} /> Save Keys
+                  </button>
                 </div>
               </div>
+            </div>
 
-              {/* Providers Grid */}
-              {filteredGroups.map(grp => (
-                <div key={grp.group} className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
-                  <div>
-                    <h3 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", margin: 0 }}>{grp.group}</h3>
-                    <span style={{ fontSize: 11.5, color: "var(--fg-3)" }}>{grp.desc}</span>
-                  </div>
+            {/* Providers Grid */}
+            {filteredGroups.map(grp => (
+              <div key={grp.group} className="card" style={{ padding: 22, display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <h3 style={{ fontSize: 13.5, fontWeight: 700, color: "var(--fg)", margin: 0 }}>{grp.group}</h3>
+                  <span style={{ fontSize: 12, color: "var(--fg-3)" }}>{grp.desc}</span>
+                </div>
 
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                    {grp.items.map(item => {
-                      const val = keys[item.key as keyof typeof keys] || "";
-                      const isConfigured = val.trim().length > 0;
-                      const isRevealed = !!showKeys[item.key];
+                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 14 }}>
+                  {grp.items.map(item => {
+                    const val = keys[item.key as keyof typeof keys] || "";
+                    const isConfigured = val.trim().length > 0;
+                    const isRevealed = !!showKeys[item.key];
 
-                      return (
-                        <div
-                          key={item.key}
-                          style={{
-                            background: "var(--bg-2)",
-                            border: "1px solid var(--border)",
-                            borderRadius: "var(--r)",
-                            padding: "12px 14px",
+                    return (
+                      <div
+                        key={item.key}
+                        style={{
+                          background: "var(--bg-2)",
+                          border: "1px solid var(--border)",
+                          borderRadius: "var(--r)",
+                          padding: "14px 16px",
+                          display: "flex",
+                          flexDirection: "column",
+                          gap: 10
+                        }}
+                      >
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                            <label style={{ fontSize: 12.5, fontWeight: 600, color: "var(--fg)" }}>{item.label}</label>
+                            <a
+                              href={item.doc}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ color: "var(--fg-3)", display: "flex", alignItems: "center" }}
+                              title="Get API Key from official console"
+                            >
+                              <ExternalLink size={12} />
+                            </a>
+                          </div>
+
+                          <span style={{
+                            fontSize: 11,
+                            padding: "2px 8px",
+                            borderRadius: "var(--r-sm)",
+                            background: isConfigured ? "var(--sev-low-bg)" : "var(--bg-3)",
+                            color: isConfigured ? "var(--sev-low)" : "var(--fg-3)",
+                            border: `1px solid ${isConfigured ? "var(--sev-low-bd)" : "var(--border)"}`,
                             display: "flex",
-                            flexDirection: "column",
-                            gap: 8
-                          }}
-                        >
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                            <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                              <label style={{ fontSize: 12, fontWeight: 600, color: "var(--fg)" }}>{item.label}</label>
-                              <a
-                                href={item.doc}
-                                target="_blank"
-                                rel="noreferrer"
-                                style={{ color: "var(--fg-3)", display: "flex", alignItems: "center" }}
-                                title="Get API Key from official console"
-                              >
-                                <ExternalLink size={11} />
-                              </a>
-                            </div>
+                            alignItems: "center",
+                            gap: 5
+                          }}>
+                            <span style={{ width: 5, height: 5, borderRadius: "50%", background: isConfigured ? "var(--sev-low)" : "var(--fg-3)" }} />
+                            {isConfigured ? "Configured" : "Not Set"}
+                          </span>
+                        </div>
 
-                            <span style={{
-                              fontSize: 10.5,
-                              padding: "2px 6px",
-                              borderRadius: "var(--r-sm)",
-                              background: isConfigured ? "var(--sev-low-bg)" : "var(--bg-3)",
-                              color: isConfigured ? "var(--sev-low)" : "var(--fg-3)",
-                              border: `1px solid ${isConfigured ? "var(--sev-low-bd)" : "var(--border)"}`,
+                        <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                          <input
+                            type={isRevealed ? "text" : "password"}
+                            placeholder={item.placeholder}
+                            value={val}
+                            onChange={e => setKeys({ ...keys, [item.key]: e.target.value })}
+                            style={{
+                              width: "100%",
+                              height: 40,
+                              padding: "0 40px 0 12px",
+                              background: "var(--bg-1)",
+                              border: "1px solid var(--border-md)",
+                              borderRadius: "var(--r)",
+                              color: "var(--fg)",
+                              fontSize: 13,
+                              fontFamily: "var(--font-mono)",
+                              outline: "none"
+                            }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowKeys(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
+                            style={{
+                              position: "absolute",
+                              right: 6,
+                              width: 30,
+                              height: 30,
+                              background: "transparent",
+                              border: "none",
+                              color: "var(--fg-3)",
+                              cursor: "pointer",
                               display: "flex",
                               alignItems: "center",
-                              gap: 4
-                            }}>
-                              <span style={{ width: 5, height: 5, borderRadius: "50%", background: isConfigured ? "var(--sev-low)" : "var(--fg-3)" }} />
-                              {isConfigured ? "Configured" : "Not Set"}
-                            </span>
-                          </div>
-
-                          <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                            <input
-                              type={isRevealed ? "text" : "password"}
-                              placeholder={item.placeholder}
-                              value={val}
-                              onChange={e => setKeys({ ...keys, [item.key]: e.target.value })}
-                              style={{
-                                width: "100%",
-                                padding: "7px 32px 7px 10px",
-                                background: "var(--bg-1)",
-                                border: "1px solid var(--border-md)",
-                                borderRadius: "var(--r-sm)",
-                                color: "var(--fg)",
-                                fontSize: 12,
-                                fontFamily: "var(--font-mono)"
-                              }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => setShowKeys(prev => ({ ...prev, [item.key]: !prev[item.key] }))}
-                              style={{
-                                position: "absolute",
-                                right: 8,
-                                background: "transparent",
-                                border: "none",
-                                color: "var(--fg-3)",
-                                cursor: "pointer",
-                                display: "flex",
-                                alignItems: "center"
-                              }}
-                              title={isRevealed ? "Hide key" : "Reveal key"}
-                            >
-                              {isRevealed ? <EyeOff size={14} /> : <Eye size={14} />}
-                            </button>
-                          </div>
-
-                          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11, color: "var(--fg-3)" }}>
-                            <span>{item.hint}</span>
-                            {isConfigured && (
-                              <button
-                                onClick={() => setKeys({ ...keys, [item.key]: "" })}
-                                style={{ background: "transparent", border: "none", color: "var(--sev-critical)", cursor: "pointer", fontSize: 11 }}
-                              >
-                                Clear
-                              </button>
-                            )}
-                          </div>
+                              justifyContent: "center",
+                              borderRadius: "var(--r-sm)"
+                            }}
+                            title={isRevealed ? "Hide key" : "Reveal key"}
+                          >
+                            {isRevealed ? <EyeOff size={15} /> : <Eye size={15} />}
+                          </button>
                         </div>
-                      );
-                    })}
-                  </div>
+
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 11.5, color: "var(--fg-3)" }}>
+                          <span>{item.hint}</span>
+                          {isConfigured && (
+                            <button
+                              onClick={() => setKeys({ ...keys, [item.key]: "" })}
+                              style={{ background: "transparent", border: "none", color: "var(--sev-critical)", cursor: "pointer", fontSize: 11.5 }}
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
-              ))}
+              </div>
+            ))}
 
               {/* Custom Models & Local LLM Studio */}
               <div className="card" style={{ padding: 20, display: "flex", flexDirection: "column", gap: 16 }}>
@@ -791,7 +822,7 @@ export default function Settings() {
                       >
                         <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1.2fr 1.5fr 1fr", gap: 10 }}>
                           <div>
-                            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--fg-2)", marginBottom: 4 }}>Model ID (LiteLLM Format)</label>
+                            <label style={{ display: "block", fontSize: 11.5, fontWeight: 600, color: "var(--fg-2)", marginBottom: 5 }}>Model ID (LiteLLM Format)</label>
                             <input
                               placeholder="e.g. ollama/llama3.3"
                               value={model.value}
@@ -800,12 +831,12 @@ export default function Settings() {
                                 next[i].value = e.target.value;
                                 setCustomModels(next);
                               }}
-                              style={{ width: "100%", padding: "6px 10px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                              style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                             />
                           </div>
 
                           <div>
-                            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--fg-2)", marginBottom: 4 }}>Display Label</label>
+                            <label style={{ display: "block", fontSize: 11.5, fontWeight: 600, color: "var(--fg-2)", marginBottom: 5 }}>Display Label</label>
                             <input
                               placeholder="e.g. Local Llama 3.3"
                               value={model.label}
@@ -814,12 +845,12 @@ export default function Settings() {
                                 next[i].label = e.target.value;
                                 setCustomModels(next);
                               }}
-                              style={{ width: "100%", padding: "6px 10px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
+                              style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, outline: "none" }}
                             />
                           </div>
 
                           <div>
-                            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--fg-2)", marginBottom: 4 }}>Endpoint URL (Optional)</label>
+                            <label style={{ display: "block", fontSize: 11.5, fontWeight: 600, color: "var(--fg-2)", marginBottom: 5 }}>Endpoint URL (Optional)</label>
                             <input
                               placeholder="e.g. http://localhost:11434"
                               value={model.url || ""}
@@ -828,12 +859,12 @@ export default function Settings() {
                                 next[i].url = e.target.value;
                                 setCustomModels(next);
                               }}
-                              style={{ width: "100%", padding: "6px 10px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                              style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                             />
                           </div>
 
                           <div>
-                            <label style={{ display: "block", fontSize: 11, fontWeight: 600, color: "var(--fg-2)", marginBottom: 4 }}>API Key (Optional)</label>
+                            <label style={{ display: "block", fontSize: 11.5, fontWeight: 600, color: "var(--fg-2)", marginBottom: 5 }}>API Key (Optional)</label>
                             <input
                               type="password"
                               placeholder="Bearer token..."
@@ -843,7 +874,7 @@ export default function Settings() {
                                 next[i].apiKey = e.target.value;
                                 setCustomModels(next);
                               }}
-                              style={{ width: "100%", padding: "6px 10px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                              style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                             />
                           </div>
                         </div>
@@ -992,7 +1023,7 @@ export default function Settings() {
                   <select
                     value={agentConfig.maxTurnsBudget}
                     onChange={e => setAgentConfig({ ...agentConfig, maxTurnsBudget: Number(e.target.value) })}
-                    style={{ width: "100%", padding: "7px 10px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
+                    style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, outline: "none" }}
                   >
                     <option value={15}>15 Turns (Quick Audit)</option>
                     <option value={30}>30 Turns (Standard Benchmark)</option>
@@ -1011,7 +1042,7 @@ export default function Settings() {
                   <select
                     value={agentConfig.exploitVerificationMode}
                     onChange={e => setAgentConfig({ ...agentConfig, exploitVerificationMode: e.target.value })}
-                    style={{ width: "100%", padding: "7px 10px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
+                    style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, outline: "none" }}
                   >
                     <option value="safe_poc">Safe PoC Only (Non-destructive validation)</option>
                     <option value="active_replay">Active Replay (Execute live payload verification)</option>
@@ -1028,7 +1059,7 @@ export default function Settings() {
                   <input
                     value={agentConfig.customUserAgent}
                     onChange={e => setAgentConfig({ ...agentConfig, customUserAgent: e.target.value })}
-                    style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                    style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                   />
                   <span style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4, display: "block" }}>
                     Sent with all reconnaissance browser and HTTP API probe requests.
@@ -1043,7 +1074,7 @@ export default function Settings() {
                     rows={3}
                     value={agentConfig.customHeaders}
                     onChange={e => setAgentConfig({ ...agentConfig, customHeaders: e.target.value })}
-                    style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)", resize: "vertical" }}
+                    style={{ width: "100%", padding: "10px 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", resize: "vertical", outline: "none" }}
                   />
                   <span style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4, display: "block" }}>
                     Format: Header-Name: Value (one per line). Ideal for bug bounty authorization tokens or staging bypass cookies.
@@ -1085,7 +1116,7 @@ export default function Settings() {
                     rows={3}
                     value={scopeConfig.allowedCidrs}
                     onChange={e => setScopeConfig({ ...scopeConfig, allowedCidrs: e.target.value })}
-                    style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                    style={{ width: "100%", padding: "10px 12px", minHeight: 80, background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                   />
                 </div>
 
@@ -1100,7 +1131,7 @@ export default function Settings() {
                     rows={3}
                     value={scopeConfig.excludedDomains}
                     onChange={e => setScopeConfig({ ...scopeConfig, excludedDomains: e.target.value })}
-                    style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                    style={{ width: "100%", padding: "10px 12px", minHeight: 80, background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                   />
                 </div>
               </div>
@@ -1117,7 +1148,7 @@ export default function Settings() {
                     placeholder="e.g. http://127.0.0.1:8080 or socks5://proxy.corp.internal:1080"
                     value={scopeConfig.proxyUrl}
                     onChange={e => setScopeConfig({ ...scopeConfig, proxyUrl: e.target.value })}
-                    style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                    style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                   />
                   <span style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4, display: "block" }}>
                     Routes all scan traffic through an inspection proxy (e.g. Burp Suite Professional, OWASP ZAP, or corporate egress NAT).
@@ -1206,7 +1237,7 @@ export default function Settings() {
                     placeholder="https://discord.com/api/webhooks/123.../abc..."
                     value={notificationConfig.discordWebhookUrl}
                     onChange={e => setNotificationConfig({ ...notificationConfig, discordWebhookUrl: e.target.value })}
-                    style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                    style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                   />
                   <span style={{ fontSize: 11, color: "var(--fg-3)", marginTop: 4, display: "block" }}>
                     Posts formatted vulnerability embeds directly into your designated Discord triage channel.
@@ -1239,7 +1270,7 @@ export default function Settings() {
                       placeholder="123456789:ABCdefGhIJKlmNoPQRstuVWXyz"
                       value={notificationConfig.telegramBotToken}
                       onChange={e => setNotificationConfig({ ...notificationConfig, telegramBotToken: e.target.value })}
-                      style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                      style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                     />
                   </div>
                   <div>
@@ -1248,7 +1279,7 @@ export default function Settings() {
                       placeholder="e.g. -1001234567890 or 987654321"
                       value={notificationConfig.telegramChatId}
                       onChange={e => setNotificationConfig({ ...notificationConfig, telegramChatId: e.target.value })}
-                      style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                      style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                     />
                   </div>
                 </div>
@@ -1279,7 +1310,7 @@ export default function Settings() {
                       placeholder="xoxb-..."
                       value={notificationConfig.slackBotToken}
                       onChange={e => setNotificationConfig({ ...notificationConfig, slackBotToken: e.target.value })}
-                      style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                      style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                     />
                   </div>
                   <div>
@@ -1288,7 +1319,7 @@ export default function Settings() {
                       placeholder="e.g. C01234567"
                       value={notificationConfig.slackChannelId}
                       onChange={e => setNotificationConfig({ ...notificationConfig, slackChannelId: e.target.value })}
-                      style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                      style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, fontFamily: "var(--font-mono)", outline: "none" }}
                     />
                   </div>
                 </div>
@@ -1388,7 +1419,7 @@ export default function Settings() {
                       placeholder="••••••••••••"
                       value={pwForm.currentPassword}
                       onChange={e => setPwForm({ ...pwForm, currentPassword: e.target.value })}
-                      style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
+                      style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, outline: "none" }}
                     />
                   </div>
 
@@ -1399,7 +1430,7 @@ export default function Settings() {
                       placeholder="••••••••••••"
                       value={pwForm.newPassword}
                       onChange={e => setPwForm({ ...pwForm, newPassword: e.target.value })}
-                      style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
+                      style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, outline: "none" }}
                     />
                   </div>
 
@@ -1410,7 +1441,7 @@ export default function Settings() {
                       placeholder="••••••••••••"
                       value={pwForm.confirmPassword}
                       onChange={e => setPwForm({ ...pwForm, confirmPassword: e.target.value })}
-                      style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
+                      style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, outline: "none" }}
                     />
                   </div>
                 </div>
@@ -1457,7 +1488,7 @@ export default function Settings() {
                   <select
                     value={preferencesConfig.defaultModel}
                     onChange={e => setPreferencesConfig({ ...preferencesConfig, defaultModel: e.target.value })}
-                    style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
+                    style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, outline: "none" }}
                   >
                     <option value="openai/gpt-4o">OpenAI GPT-4o</option>
                     <option value="anthropic/claude-3-5-sonnet-latest">Anthropic Claude 3.5 Sonnet</option>
@@ -1480,7 +1511,7 @@ export default function Settings() {
                   <select
                     value={preferencesConfig.autoDeleteDays}
                     onChange={e => setPreferencesConfig({ ...preferencesConfig, autoDeleteDays: Number(e.target.value) })}
-                    style={{ width: "100%", padding: "8px 12px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
+                    style={{ width: "100%", height: 38, padding: "0 12px", background: "var(--bg-1)", border: "1px solid var(--border-md)", borderRadius: "var(--r)", color: "var(--fg)", fontSize: 13, outline: "none" }}
                   >
                     <option value={0}>Never Auto-Delete (Retain indefinitely)</option>
                     <option value={7}>Auto-purge after 7 Days</option>
@@ -1608,6 +1639,5 @@ export default function Settings() {
           )}
         </div>
       </div>
-    </div>
   );
 }

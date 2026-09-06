@@ -318,332 +318,320 @@ export default function Sidebar() {
         </div>
       </div>
 
-      {/* Enlarged User Profile & Security Modal */}
+      {/* Modern Compact Operator Profile & Security Modal */}
       {showProfile && (
         <div 
           style={{
             position: "fixed", top: 0, left: 0, right: 0, bottom: 0,
             background: "rgba(0, 0, 0, 0.75)",
-            backdropFilter: "blur(8px)",
+            backdropFilter: "blur(6px)",
             zIndex: 9999,
             display: "flex", alignItems: "center", justifyContent: "center",
-            padding: 20,
-            animation: "fade 0.2s forwards"
+            padding: 16,
+            animation: "fade 0.15s forwards"
           }}
           onClick={() => setShowProfile(false)}
         >
           <div 
             style={{
-              background: "#0c0c0e",
-              border: "1px solid var(--border-hi)",
-              borderRadius: 24,
-              padding: 36,
-              width: 860,
-              maxWidth: "95vw",
-              maxHeight: "90vh",
+              background: "var(--bg-1)",
+              border: "1px solid var(--border-md)",
+              borderRadius: "var(--r-xl)",
+              padding: "24px 26px",
+              width: 540,
+              maxWidth: "100%",
+              maxHeight: "92vh",
               overflowY: "auto",
               display: "flex",
               flexDirection: "column",
-              gap: 28,
-              boxShadow: "0 30px 60px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.08)",
-              animation: "slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1) forwards",
+              gap: 20,
+              boxShadow: "0 24px 48px -12px rgba(0,0,0,0.7), 0 0 0 1px rgba(255,255,255,0.06)",
+              animation: "slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards",
               position: "relative"
             }}
             onClick={e => e.stopPropagation()}
           >
-            {/* Close Button */}
-            <button
-              onClick={() => setShowProfile(false)}
-              style={{
-                position: "absolute", top: 24, right: 24,
-                background: "var(--bg-2)", border: "1px solid var(--border)",
-                color: "var(--fg-2)", borderRadius: "50%",
-                width: 36, height: 36, display: "flex", alignItems: "center", justifyContent: "center",
-                cursor: "pointer", transition: "all 0.2s ease"
-              }}
-              onMouseOver={e => {
-                e.currentTarget.style.background = "var(--bg-3)";
-                e.currentTarget.style.color = "#fff";
-              }}
-              onMouseOut={e => {
-                e.currentTarget.style.background = "var(--bg-2)";
-                e.currentTarget.style.color = "var(--fg-2)";
-              }}
-            >
-              <X size={18} />
-            </button>
-
-            {/* Profile Banner */}
-            <div style={{ display: "flex", alignItems: "center", gap: 24, borderBottom: "1px solid var(--border)", paddingBottom: 24 }}>
-              <div style={{ 
-                width: 84, height: 84, borderRadius: "50%", 
-                background: "linear-gradient(135deg, #3b82f6 0%, #8b5cf6 100%)", 
-                color: "#ffffff", display: "flex", alignItems: "center", justifyContent: "center", 
-                fontSize: 34, fontWeight: "bold",
-                boxShadow: "0 10px 20px rgba(139, 92, 246, 0.3)"
-              }}>
-                {user ? user.username.charAt(0).toUpperCase() : "U"}
-              </div>
-              <div style={{ flex: 1 }}>
-                <div style={{ display: "flex", alignItems: "center", gap: 12, flexWrap: "wrap" }}>
-                  <h2 style={{ fontSize: 26, margin: 0, textTransform: "capitalize", fontWeight: 700, letterSpacing: "-0.02em", color: "#fff" }}>
-                    {user?.username || "Guest"}
-                  </h2>
-                  <span style={{ 
-                    padding: "4px 12px", 
-                    background: user?.role === "ADMIN" ? "rgba(139, 92, 246, 0.15)" : "rgba(59, 130, 246, 0.15)", 
-                    color: user?.role === "ADMIN" ? "#c084fc" : "#60a5fa", 
-                    border: user?.role === "ADMIN" ? "1px solid rgba(139, 92, 246, 0.3)" : "1px solid rgba(59, 130, 246, 0.3)",
-                    borderRadius: 20, fontSize: 12, fontWeight: 700, textTransform: "uppercase" 
-                  }}>
-                    {user?.role === "ADMIN" ? "Administrator" : "Security Engineer"}
-                  </span>
-                  <span style={{ padding: "4px 12px", background: "rgba(74,222,128,0.15)", color: "#4ade80", border: "1px solid rgba(74,222,128,0.3)", borderRadius: 20, fontSize: 12, fontWeight: 600 }}>
-                    ● {user?.status || "APPROVED"}
-                  </span>
+            {/* Header: Close Button & Title */}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
+                <div style={{ 
+                  width: 52, height: 52, borderRadius: "50%", 
+                  background: "var(--bg-3)", 
+                  border: "1px solid var(--border-hi)",
+                  color: "var(--fg)", display: "flex", alignItems: "center", justifyContent: "center", 
+                  fontSize: 20, fontWeight: 700, fontFamily: "var(--font-mono)"
+                }}>
+                  {user ? user.username.charAt(0).toUpperCase() : "U"}
                 </div>
-                <p style={{ color: "var(--fg-3)", fontSize: 14, marginTop: 8, display: "flex", alignItems: "center", gap: 6 }}>
-                  <Calendar size={14} /> Joined {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recently"}
-                </p>
+                <div>
+                  <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <h2 style={{ fontSize: 18, margin: 0, textTransform: "capitalize", fontWeight: 700, color: "var(--fg)", letterSpacing: "-0.01em" }}>
+                      {user?.username || "Guest"}
+                    </h2>
+                    <span style={{ 
+                      padding: "2px 8px", 
+                      background: "var(--bg-3)", 
+                      color: "var(--fg-2)", 
+                      border: "1px solid var(--border-md)",
+                      borderRadius: "var(--r-sm)", fontSize: 11, fontWeight: 600, textTransform: "uppercase" 
+                    }}>
+                      {user?.role === "ADMIN" ? "Admin" : "Engineer"}
+                    </span>
+                    <span style={{
+                      fontSize: 11,
+                      color: "var(--sev-low)",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 4
+                    }}>
+                      <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--sev-low)" }} />
+                      {user?.status || "Active"}
+                    </span>
+                  </div>
+                  <p style={{ color: "var(--fg-3)", fontSize: 12, marginTop: 4, display: "flex", alignItems: "center", gap: 5, margin: "4px 0 0" }}>
+                    <Calendar size={12} /> Joined {user?.createdAt ? new Date(user.createdAt).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : "Recently"}
+                  </p>
+                </div>
               </div>
+
+              <button
+                onClick={() => setShowProfile(false)}
+                style={{
+                  background: "var(--bg-2)", border: "1px solid var(--border)",
+                  color: "var(--fg-3)", borderRadius: "var(--r)",
+                  width: 30, height: 30, display: "flex", alignItems: "center", justifyContent: "center",
+                  cursor: "pointer", transition: "all 0.15s ease"
+                }}
+                onMouseOver={e => {
+                  e.currentTarget.style.color = "var(--fg)";
+                  e.currentTarget.style.borderColor = "var(--border-hi)";
+                }}
+                onMouseOut={e => {
+                  e.currentTarget.style.color = "var(--fg-3)";
+                  e.currentTarget.style.borderColor = "var(--border)";
+                }}
+              >
+                <X size={15} />
+              </button>
             </div>
 
-            {/* Modal Navigation Tabs */}
-            <div style={{ display: "flex", gap: 12, borderBottom: "1px solid var(--border)", paddingBottom: 12 }}>
+            {/* Segmented Tab Switcher */}
+            <div style={{
+              display: "flex",
+              gap: 4,
+              background: "var(--bg-2)",
+              padding: 3,
+              borderRadius: "var(--r)",
+              border: "1px solid var(--border)"
+            }}>
               <button
                 onClick={() => setActiveTab("overview")}
                 style={{
-                  padding: "10px 20px", borderRadius: 10, fontSize: 14, fontWeight: 600,
-                  border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
-                  transition: "all 0.2s ease",
-                  background: activeTab === "overview" ? "var(--bg-3)" : "transparent",
-                  color: activeTab === "overview" ? "#fff" : "var(--fg-3)"
+                  flex: 1,
+                  padding: "7px 12px",
+                  borderRadius: "var(--r-sm)",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  transition: "all 0.15s ease",
+                  background: activeTab === "overview" ? "var(--bg-4)" : "transparent",
+                  color: activeTab === "overview" ? "var(--fg)" : "var(--fg-3)"
                 }}
               >
-                <UserCheck size={16} /> Overview & Metadata
+                <UserCheck size={14} /> Profile & Metadata
               </button>
               <button
                 onClick={() => setActiveTab("security")}
                 style={{
-                  padding: "10px 20px", borderRadius: 10, fontSize: 14, fontWeight: 600,
-                  border: "none", cursor: "pointer", display: "flex", alignItems: "center", gap: 8,
-                  transition: "all 0.2s ease",
-                  background: activeTab === "security" ? "var(--bg-3)" : "transparent",
-                  color: activeTab === "security" ? "#fff" : "var(--fg-3)"
+                  flex: 1,
+                  padding: "7px 12px",
+                  borderRadius: "var(--r-sm)",
+                  fontSize: 12.5,
+                  fontWeight: 600,
+                  border: "none",
+                  cursor: "pointer",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  gap: 6,
+                  transition: "all 0.15s ease",
+                  background: activeTab === "security" ? "var(--bg-4)" : "transparent",
+                  color: activeTab === "security" ? "var(--fg)" : "var(--fg-3)"
                 }}
               >
-                <Lock size={16} /> Security & Change Password
+                <Lock size={14} /> Change Password
               </button>
             </div>
 
-            {/* TAB 1: OVERVIEW & EXTENDED INFO */}
+            {/* TAB 1: OVERVIEW */}
             {activeTab === "overview" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(240px, 1fr))", gap: 14 }}>
-                  
-                  {/* User ID */}
-                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: 18, borderRadius: 14 }}>
-                    <div style={{ color: "var(--fg-3)", fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600, display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                      <span>User ID (UUID)</span>
-                      <button 
-                        onClick={handleCopyId}
-                        style={{ background: "transparent", border: "none", color: copiedId ? "#4ade80" : "var(--fg-3)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}
-                      >
-                        {copiedId ? <Check size={13} /> : <Copy size={13} />} {copiedId ? "Copied" : "Copy"}
-                      </button>
-                    </div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--fg)", wordBreak: "break-all" }}>
-                      {user?.id || "—"}
+              <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
+                {/* User ID */}
+                <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: "10px 14px", borderRadius: "var(--r)" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 4 }}>
+                    <span style={{ fontSize: 11, color: "var(--fg-3)", textTransform: "uppercase", fontWeight: 600, letterSpacing: "0.5px" }}>Operator ID</span>
+                    <button 
+                      onClick={handleCopyId}
+                      style={{ background: "transparent", border: "none", color: copiedId ? "var(--sev-low)" : "var(--fg-3)", cursor: "pointer", display: "flex", alignItems: "center", gap: 4, fontSize: 11 }}
+                    >
+                      {copiedId ? <Check size={12} /> : <Copy size={12} />} {copiedId ? "Copied" : "Copy"}
+                    </button>
+                  </div>
+                  <div style={{ fontFamily: "var(--font-mono)", fontSize: 12, color: "var(--fg)", wordBreak: "break-all" }}>
+                    {user?.id || "—"}
+                  </div>
+                </div>
+
+                {/* 2x2 Clean Specs Grid */}
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
+                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: "10px 14px", borderRadius: "var(--r)" }}>
+                    <span style={{ fontSize: 11, color: "var(--fg-3)", textTransform: "uppercase", fontWeight: 600 }}>Role & Scope</span>
+                    <div style={{ fontSize: 13, color: "var(--fg)", fontWeight: 600, marginTop: 3 }}>
+                      {user?.role === "ADMIN" ? "Platform Administrator" : "Security Auditor"}
                     </div>
                   </div>
 
-                  {/* Account Tier */}
-                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: 18, borderRadius: 14 }}>
-                    <div style={{ color: "var(--fg-3)", fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Account Tier</div>
-                    <div style={{ fontSize: 16, color: "var(--fg)", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                      <ShieldCheck size={18} style={{ color: "#a855f7" }} /> Enterprise License
+                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: "10px 14px", borderRadius: "var(--r)" }}>
+                    <span style={{ fontSize: 11, color: "var(--fg-3)", textTransform: "uppercase", fontWeight: 600 }}>Scans Run</span>
+                    <div style={{ fontSize: 13, color: "var(--fg)", fontWeight: 600, marginTop: 3 }}>
+                      {user?.scanCount ?? 0} Scans Recorded
                     </div>
                   </div>
 
-                  {/* Total Scans */}
-                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: 18, borderRadius: 14 }}>
-                    <div style={{ color: "var(--fg-3)", fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Total Scans Launched</div>
-                    <div style={{ fontSize: 20, color: "var(--fg)", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                      <Layers size={20} style={{ color: "#3b82f6" }} /> {user?.scanCount ?? 0} Scans
+                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: "10px 14px", borderRadius: "var(--r)" }}>
+                    <span style={{ fontSize: 11, color: "var(--fg-3)", textTransform: "uppercase", fontWeight: 600 }}>LLM Provider Keys</span>
+                    <div style={{ fontSize: 13, color: "var(--fg)", fontWeight: 600, marginTop: 3 }}>
+                      {user?.configuredKeysCount ?? 0} Keys Active
                     </div>
                   </div>
 
-                  {/* Configured Keys */}
-                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: 18, borderRadius: 14 }}>
-                    <div style={{ color: "var(--fg-3)", fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>LLM Provider Keys</div>
-                    <div style={{ fontSize: 16, color: "var(--fg)", fontWeight: 700, display: "flex", alignItems: "center", gap: 8 }}>
-                      <Key size={18} style={{ color: "#eab308" }} /> {user?.configuredKeysCount ?? 0} Provider Keys Configured
+                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: "10px 14px", borderRadius: "var(--r)" }}>
+                    <span style={{ fontSize: 11, color: "var(--fg-3)", textTransform: "uppercase", fontWeight: 600 }}>Session Auth</span>
+                    <div style={{ fontSize: 13, color: "var(--fg)", fontWeight: 600, marginTop: 3 }}>
+                      Signed JWT (HS256)
                     </div>
                   </div>
-
-                  {/* Session IP */}
-                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: 18, borderRadius: 14 }}>
-                    <div style={{ color: "var(--fg-3)", fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>Session IP & Protocol</div>
-                    <div style={{ fontFamily: "var(--font-mono)", fontSize: 13, color: "var(--fg)", display: "flex", alignItems: "center", gap: 8 }}>
-                      <HardDrive size={16} style={{ color: "#64748b" }} /> 127.0.0.1 (Localhost / HTTP)
-                    </div>
-                  </div>
-
-                  {/* 2FA Status */}
-                  <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", padding: 18, borderRadius: 14 }}>
-                    <div style={{ color: "var(--fg-3)", fontSize: 12, marginBottom: 8, textTransform: "uppercase", letterSpacing: "0.05em", fontWeight: 600 }}>2FA / Session Token</div>
-                    <div style={{ fontSize: 13, color: "var(--sev-high)", fontWeight: 600, display: "flex", alignItems: "center", gap: 6 }}>
-                      ● JWT Signed (HS256) / 2FA Disabled
-                    </div>
-                  </div>
-
                 </div>
               </div>
             )}
 
-            {/* TAB 2: SECURITY & CHANGE PASSWORD */}
+            {/* TAB 2: SECURITY */}
             {activeTab === "security" && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 20 }}>
-                {/* Security Banner */}
-                <div style={{ background: "rgba(59, 130, 246, 0.08)", border: "1px solid rgba(59, 130, 246, 0.2)", padding: 16, borderRadius: 12, display: "flex", alignItems: "center", gap: 12 }}>
-                  <ShieldCheck size={24} style={{ color: "#60a5fa" }} />
-                  <div>
-                    <div style={{ color: "#fff", fontWeight: 600, fontSize: 14 }}>Account Password Security</div>
-                    <div style={{ color: "var(--fg-3)", fontSize: 13, marginTop: 2 }}>Passwords are stored securely using bcrypt hashing (cost factor 10).</div>
-                  </div>
-                </div>
-
-                {/* Notifications */}
+              <form onSubmit={handlePasswordChange} style={{ display: "flex", flexDirection: "column", gap: 12 }}>
                 {pwdError && (
-                  <div style={{ background: "rgba(255, 59, 59, 0.12)", border: "1px solid rgba(255, 59, 59, 0.3)", color: "#ff6b6b", padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 10 }}>
-                    <AlertCircle size={16} /> {pwdError}
+                  <div style={{ background: "var(--sev-critical-bg)", border: "1px solid var(--sev-critical-bd)", color: "var(--sev-critical)", padding: "8px 12px", borderRadius: "var(--r-sm)", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                    <AlertCircle size={14} /> {pwdError}
                   </div>
                 )}
                 {pwdSuccess && (
-                  <div style={{ background: "rgba(74, 222, 128, 0.12)", border: "1px solid rgba(74, 222, 128, 0.3)", color: "#4ade80", padding: "12px 16px", borderRadius: 10, fontSize: 13, fontWeight: 500, display: "flex", alignItems: "center", gap: 10 }}>
-                    <CheckCircle2 size={16} /> {pwdSuccess}
+                  <div style={{ background: "var(--sev-low-bg)", border: "1px solid var(--sev-low-bd)", color: "var(--sev-low)", padding: "8px 12px", borderRadius: "var(--r-sm)", fontSize: 12, display: "flex", alignItems: "center", gap: 8 }}>
+                    <CheckCircle2 size={14} /> {pwdSuccess}
                   </div>
                 )}
 
-                {/* Password Change Form */}
-                <form onSubmit={handlePasswordChange} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+                <div>
+                  <label style={{ display: "block", color: "var(--fg-2)", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                    Current Password
+                  </label>
+                  <input
+                    type="password"
+                    placeholder="Enter current password"
+                    value={currentPassword}
+                    onChange={e => setCurrentPassword(e.target.value)}
+                    style={{
+                      width: "100%", height: 38, padding: "0 12px", borderRadius: "var(--r)",
+                      background: "var(--bg-2)", border: "1px solid var(--border-md)",
+                      color: "var(--fg)", fontSize: 13, outline: "none"
+                    }}
+                  />
+                </div>
+
+                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                   <div>
-                    <label style={{ display: "block", color: "var(--fg-2)", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                      Current Password
+                    <label style={{ display: "block", color: "var(--fg-2)", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                      New Password
                     </label>
                     <input
                       type="password"
-                      placeholder="Enter your current password"
-                      value={currentPassword}
-                      onChange={e => setCurrentPassword(e.target.value)}
+                      placeholder="Min 12 characters"
+                      value={newPassword}
+                      onChange={e => setNewPassword(e.target.value)}
                       style={{
-                        width: "100%", padding: "12px 14px", borderRadius: 10,
-                        background: "var(--bg-2)", border: "1px solid var(--border-hi)",
-                        color: "#fff", fontSize: 14, outline: "none"
+                        width: "100%", height: 38, padding: "0 12px", borderRadius: "var(--r)",
+                        background: "var(--bg-2)", border: "1px solid var(--border-md)",
+                        color: "var(--fg)", fontSize: 13, outline: "none"
                       }}
                     />
                   </div>
-
-                  <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 14 }}>
-                    <div>
-                      <label style={{ display: "block", color: "var(--fg-2)", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                        New Password
-                      </label>
-                      <input
-                        type="password"
-                        placeholder="At least 12 characters"
-                        value={newPassword}
-                        onChange={e => setNewPassword(e.target.value)}
-                        style={{
-                          width: "100%", padding: "12px 14px", borderRadius: 10,
-                          background: "var(--bg-2)", border: "1px solid var(--border-hi)",
-                          color: "#fff", fontSize: 14, outline: "none"
-                        }}
-                      />
-                    </div>
-                    <div>
-                      <label style={{ display: "block", color: "var(--fg-2)", fontSize: 13, fontWeight: 600, marginBottom: 6 }}>
-                        Confirm New Password
-                      </label>
-                      <input
-                        type="password"
-                        placeholder="Re-enter new password"
-                        value={confirmPassword}
-                        onChange={e => setConfirmPassword(e.target.value)}
-                        style={{
-                          width: "100%", padding: "12px 14px", borderRadius: 10,
-                          background: "var(--bg-2)", border: "1px solid var(--border-hi)",
-                          color: "#fff", fontSize: 14, outline: "none"
-                        }}
-                      />
-                    </div>
+                  <div>
+                    <label style={{ display: "block", color: "var(--fg-2)", fontSize: 12, fontWeight: 600, marginBottom: 4 }}>
+                      Confirm Password
+                    </label>
+                    <input
+                      type="password"
+                      placeholder="Re-enter password"
+                      value={confirmPassword}
+                      onChange={e => setConfirmPassword(e.target.value)}
+                      style={{
+                        width: "100%", height: 38, padding: "0 12px", borderRadius: "var(--r)",
+                        background: "var(--bg-2)", border: "1px solid var(--border-md)",
+                        color: "var(--fg)", fontSize: 13, outline: "none"
+                      }}
+                    />
                   </div>
+                </div>
 
-                  <div style={{ fontSize: 12, color: "var(--fg-3)", background: "var(--bg-2)", padding: 12, borderRadius: 8 }}>
-                    <strong>Password Requirements:</strong> Minimum 12 characters, including uppercase, lowercase, and a number.
-                  </div>
-
-                  <button
-                    type="submit"
-                    disabled={pwdLoading}
-                    style={{
-                      padding: "14px 20px", borderRadius: 10,
-                      background: "linear-gradient(135deg, #3b82f6 0%, #2563eb 100%)",
-                      color: "#fff", border: "none", fontWeight: 600, fontSize: 14,
-                      cursor: pwdLoading ? "wait" : "pointer",
-                      opacity: pwdLoading ? 0.7 : 1,
-                      transition: "all 0.2s ease",
-                      display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
-                      marginTop: 4
-                    }}
-                  >
-                    <Lock size={16} /> {pwdLoading ? "Updating Password..." : "Update Password"}
-                  </button>
-                </form>
-              </div>
+                <button
+                  type="submit"
+                  disabled={pwdLoading}
+                  className="btn-primary"
+                  style={{
+                    width: "100%", height: 38,
+                    display: "flex", alignItems: "center", justifyContent: "center", gap: 8,
+                    fontSize: 13, marginTop: 4
+                  }}
+                >
+                  <Lock size={14} /> {pwdLoading ? "Updating..." : "Update Password"}
+                </button>
+              </form>
             )}
 
-            {/* Actions / Sign Out Footer */}
-            <div style={{ display: "flex", gap: 14, marginTop: 12, borderTop: "1px solid var(--border)", paddingTop: 20 }}>
+            {/* Modal Footer Actions */}
+            <div style={{ display: "flex", gap: 10, borderTop: "1px solid var(--border)", paddingTop: 14 }}>
               <Link 
                 href="/settings" 
                 onClick={() => setShowProfile(false)}
+                className="btn-secondary"
                 style={{ 
-                  flex: 1, padding: "14px 0", borderRadius: 12, 
-                  border: "1px solid var(--border-hi)", background: "var(--bg-2)", 
-                  color: "var(--fg)", cursor: "pointer", fontWeight: 600, fontSize: 14,
-                  transition: "all 0.2s ease", textAlign: "center", textDecoration: "none",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8
-                }}
-                onMouseOver={e => {
-                  e.currentTarget.style.background = "var(--bg-3)";
-                  e.currentTarget.style.borderColor = "rgba(255,255,255,0.3)";
-                }}
-                onMouseOut={e => {
-                  e.currentTarget.style.background = "var(--bg-2)";
-                  e.currentTarget.style.borderColor = "var(--border-hi)";
+                  flex: 1, height: 36,
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6,
+                  fontSize: 12.5, textDecoration: "none"
                 }}
               >
-                <Settings size={16} /> Settings Page
+                <Settings size={14} /> Open Platform Settings
               </Link>
               <button 
                 style={{ 
-                  flex: 1, padding: "14px 0", borderRadius: 12, 
-                  border: "1px solid rgba(255, 59, 59, 0.4)", 
-                  background: "rgba(255, 59, 59, 0.15)", 
-                  color: "#ff6b6b", cursor: "pointer", fontWeight: 600, fontSize: 14,
-                  transition: "all 0.2s ease",
-                  display: "flex", alignItems: "center", justifyContent: "center", gap: 8
+                  height: 36, padding: "0 16px",
+                  borderRadius: "var(--r)",
+                  border: "1px solid rgba(248,81,73,0.3)", 
+                  background: "rgba(248,81,73,0.08)", 
+                  color: "var(--sev-critical)", cursor: "pointer", fontWeight: 600, fontSize: 12.5,
+                  transition: "all 0.15s ease",
+                  display: "flex", alignItems: "center", justifyContent: "center", gap: 6
                 }}
                 onMouseOver={e => {
-                  e.currentTarget.style.background = "rgba(255, 59, 59, 0.35)";
-                  e.currentTarget.style.color = "#ffffff";
-                  e.currentTarget.style.borderColor = "rgba(255, 59, 59, 0.8)";
+                  e.currentTarget.style.background = "rgba(248,81,73,0.18)";
+                  e.currentTarget.style.borderColor = "var(--sev-critical)";
                 }}
                 onMouseOut={e => {
-                  e.currentTarget.style.background = "rgba(255, 59, 59, 0.15)";
-                  e.currentTarget.style.color = "#ff6b6b";
-                  e.currentTarget.style.borderColor = "rgba(255, 59, 59, 0.4)";
+                  e.currentTarget.style.background = "rgba(248,81,73,0.08)";
+                  e.currentTarget.style.borderColor = "rgba(248,81,73,0.3)";
                 }}
                 onClick={() => {
                   fetch("/api/auth/logout", { method: "POST" }).then(() => {
@@ -651,13 +639,13 @@ export default function Sidebar() {
                   });
                 }}
               >
-                <LogOut size={16} /> Sign Out
+                <LogOut size={14} /> Sign Out
               </button>
             </div>
           </div>
           <style dangerouslySetInnerHTML={{__html: `
             @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-            @keyframes slideUp { from { opacity: 0; transform: translateY(20px) scale(0.95); } to { opacity: 1; transform: translateY(0) scale(1); } }
+            @keyframes slideUp { from { opacity: 0; transform: translateY(12px) scale(0.98); } to { opacity: 1; transform: translateY(0) scale(1); } }
           `}} />
         </div>
       )}
