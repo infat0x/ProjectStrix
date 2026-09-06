@@ -51,18 +51,19 @@ If you prefer to manage the compose lifecycle manually:
 2. **Configure environment variables**:
    Copy the example environment configuration:
    ```bash
+   cd podman
    cp .env.podman.example .env.podman
    ```
    Edit `.env.podman` with your own secure random secrets for `POSTGRES_PASSWORD`, `SESSION_SECRET`, and `SCHEDULER_SECRET`.
 
 3. **Start the containers**:
-   Using Podman Compose:
+   Using Podman Compose (from inside `podman/`):
    ```bash
-   podman-compose -f podman-compose.yml --env-file .env.podman up -d --build
+   podman-compose up -d --build
    ```
    Or using Docker Compose:
    ```bash
-   docker compose -f podman-compose.yml --env-file .env.podman up -d --build
+   docker compose up -d --build
    ```
 
 4. **Access the Dashboard**:

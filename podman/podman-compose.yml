@@ -21,8 +21,8 @@ services:
 
   strix-dashboard:
     build:
-      context: .
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: podman/Dockerfile
     container_name: strix-dashboard
     restart: unless-stopped
     depends_on:

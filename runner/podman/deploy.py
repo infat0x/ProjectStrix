@@ -2,6 +2,7 @@
 """
 Project Strix — Automated 1-Click Podman Deployment Orchestrator
 Idempotent, self-healing deployment for containerized Strix (Podman + Compose).
+Execution scripts live in runner/podman/; container configurations live in podman/.
 Full cross-platform support: Linux VPS/Bare-metal, Windows host, and WSL2.
 """
 
@@ -35,14 +36,22 @@ def print_warn(msg):
 def print_error(msg):
     print(f"{Colors.FAIL}✖ {msg}{Colors.ENDC}")
 
+def get_runner_dir():
+    """Return this script's directory (runner/podman)."""
+    return os.path.dirname(os.path.abspath(__file__))
+
 def get_project_root():
     """Dynamically determine the root ProjectStrix directory."""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    if os.path.exists(os.path.join(current_dir, "podman-compose.yml")):
+    current_dir = get_runner_dir()
+    if os.path.exists(os.path.join(current_dir, "strix-dashboard")):
         return current_dir
-    if os.path.exists(os.path.join(current_dir, "..", "podman-compose.yml")):
+    if os.path.exists(os.path.join(current_dir, "..", "strix-dashboard")):
         return os.path.abspath(os.path.join(current_dir, ".."))
     return os.path.abspath(os.path.join(current_dir, "..", ".."))
+
+def get_podman_config_dir():
+    """Return the dedicated podman/ configuration directory."""
+    return os.path.join(get_project_root(), "podman")
 
 def is_wsl():
     """Detect if running inside Windows Subsystem for Linux (WSL)."""
@@ -186,11 +195,21 @@ def get_compose_command():
     print("Install it via: pip3 install podman-compose")
     sys.exit(1)
 
-def ensure_env_file(project_root):
-    """Generate cryptographically secure secrets in .env.podman if not already set."""
+def ensure_env_file(config_dir):
+    """Generate cryptographically secure secrets in podman/.env.podman if not already set."""
     print_step("Configuring environment variables...")
-    env_path = os.path.join(project_root, ".env.podman")
+    env_path = os.path.join(config_dir, ".env.podman")
     
+    # Check for legacy .env.podman in project root and migrate if present
+    root_env_path = os.path.join(get_project_root(), ".env.podman")
+    if not os.path.exists(env_path) and os.path.exists(root_env_path):
+        try:
+            import shutil
+            shutil.copyfile(root_env_path, env_path)
+            print_success("Migrated existing root .env.podman into podman/.env.podman")
+        except Exception:
+            pass
+
     env_vars = {}
     if os.path.exists(env_path):
         with open(env_path, "r") as f:
@@ -235,27 +254,27 @@ def ensure_env_file(project_root):
             f.write("# Project Strix — Podman Auto-Generated Secrets\n")
             for k, v in env_vars.items():
                 f.write(f"{k}={v}\n")
-        print_success("Created/updated .env.podman with fresh cryptographically secure credentials.")
+        print_success("Created/updated podman/.env.podman with fresh cryptographically secure credentials.")
     else:
-        print_success("Using existing configuration from .env.podman.")
+        print_success("Using existing configuration from podman/.env.podman.")
 
     return env_vars
 
-def deploy_containers(project_root, compose_cmd, env_vars):
-    """Build and deploy containers using the detected compose tool."""
+def deploy_containers(config_dir, compose_cmd, env_vars):
+    """Build and deploy containers using the compose file in podman/."""
     print_step("Deploying Strix via Podman Compose...")
-    compose_file = os.path.join(project_root, "podman-compose.yml")
-    env_file = os.path.join(project_root, ".env.podman")
+    compose_file = os.path.join(config_dir, "podman-compose.yml")
+    env_file = os.path.join(config_dir, ".env.podman")
 
     env = os.environ.copy()
     env.update(env_vars)
 
     cmd = f"{compose_cmd} -f {compose_file} --env-file {env_file} up -d --build"
-    print(f"Executing: {cmd}")
+    print(f"Executing in {config_dir}: {cmd}")
     
     code, out = run_cmd(cmd, fail_on_error=False, env=env)
     if code != 0:
-        # Some versions of podman-compose don't support --env-file flag, try without it since env is injected
+        # Fallback if --env-file flag is not supported by older podman-compose versions
         fallback_cmd = f"{compose_cmd} -f {compose_file} up -d --build"
         print_warn(f"--env-file flag failed. Retrying: {fallback_cmd}")
         run_cmd(fallback_cmd, fail_on_error=True, env=env)
@@ -292,7 +311,8 @@ def main():
     print(f"{Colors.OKCYAN}{Colors.BOLD}╚══════════════════════════════════════════════════════════════════╝{Colors.ENDC}\n")
 
     project_root = get_project_root()
-    os.chdir(project_root)
+    config_dir = get_podman_config_dir()
+    os.chdir(config_dir)
 
     # 1. Check OS and Environment
     if os.name == 'nt':
@@ -306,8 +326,8 @@ def main():
     # 2. Linux / WSL execution
     check_and_install_podman()
     compose_cmd = get_compose_command()
-    env_vars = ensure_env_file(project_root)
-    deploy_containers(project_root, compose_cmd, env_vars)
+    env_vars = ensure_env_file(config_dir)
+    deploy_containers(config_dir, compose_cmd, env_vars)
 
     port = env_vars.get("PORT", "48080")
     wait_for_service(port)
@@ -318,8 +338,8 @@ def main():
     print(f"{Colors.BOLD}View Live Logs:{Colors.ENDC}  podman logs -f strix-dashboard")
     print(f"{Colors.BOLD}Database Logs:{Colors.ENDC}   podman logs -f strix-postgres")
     print(f"{Colors.BOLD}Container List:{Colors.ENDC}  podman ps")
-    print(f"{Colors.BOLD}Stop App:{Colors.ENDC}        {compose_cmd} -f podman-compose.yml down")
-    print(f"{Colors.BOLD}Restart App:{Colors.ENDC}     {compose_cmd} -f podman-compose.yml restart\n")
+    print(f"{Colors.BOLD}Stop App:{Colors.ENDC}        cd podman && {compose_cmd} down")
+    print(f"{Colors.BOLD}Restart App:{Colors.ENDC}     cd podman && {compose_cmd} restart\n")
 
 if __name__ == "__main__":
     main()
