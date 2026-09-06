@@ -38,6 +38,8 @@ COPY strix-dashboard/ ./
 # 6. Build Next.js for production
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
+ENV SESSION_SECRET="build_dummy_session_secret_32bytes_long_random_hex"
+ENV SCHEDULER_SECRET="build_dummy_scheduler_secret_32bytes_random"
 RUN npm run build
 
 # 7. Create directory for scan runs and logs

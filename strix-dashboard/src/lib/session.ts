@@ -2,11 +2,11 @@ import { SignJWT, jwtVerify } from "jose";
 import { cookies } from "next/headers";
 import { prisma } from "./prisma";
 
-// SESSION_SECRET must be set by deploy.py before startup.
-// No fallback: missing secret means auth is broken — fail loudly.
-const secretKey = process.env.SESSION_SECRET;
-if (!secretKey) throw new Error("[FATAL] SESSION_SECRET environment variable is not set. Run deploy.py to generate it.");
-const encodedKey = new TextEncoder().encode(secretKey);
+function getEncodedKey(): Uint8Array {
+  const secretKey = process.env.SESSION_SECRET || (process.env.NEXT_PHASE === "phase-production-build" ? "build_fallback_secret_32bytes_hex" : undefined);
+  if (!secretKey) throw new Error("[FATAL] SESSION_SECRET environment variable is not set. Run deploy.py to generate it.");
+  return new TextEncoder().encode(secretKey);
+}
 
 export async function createSession(
   userId: string,
@@ -21,7 +21,7 @@ export async function createSession(
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime("7d")
-    .sign(encodedKey);
+    .sign(getEncodedKey());
 
   const cookieStore = await cookies();
   cookieStore.set("strix_session", session, {
@@ -46,7 +46,7 @@ export async function getSession() {
   if (!session) return null;
 
   try {
-    const { payload } = await jwtVerify(session, encodedKey, {
+    const { payload } = await jwtVerify(session, getEncodedKey(), {
       algorithms: ["HS256"],
     });
 

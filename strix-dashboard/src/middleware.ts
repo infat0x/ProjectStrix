@@ -2,9 +2,11 @@ import { NextResponse } from 'next/server'
 import type { NextRequest } from 'next/server'
 import { jwtVerify } from 'jose'
 
-const secretKey = process.env.SESSION_SECRET;
-if (!secretKey) throw new Error("[FATAL] SESSION_SECRET is not set.");
-const encodedKey = new TextEncoder().encode(secretKey);
+function getEncodedKey(): Uint8Array {
+  const secretKey = process.env.SESSION_SECRET || (process.env.NEXT_PHASE === "phase-production-build" ? "build_fallback_secret_32bytes_hex" : undefined);
+  if (!secretKey) throw new Error("[FATAL] SESSION_SECRET is not set.");
+  return new TextEncoder().encode(secretKey);
+}
 
 const protectedApiPrefix = '/api'
 const publicApiPrefixes = ['/api/auth', '/api/docs', '/api-docs']
@@ -78,7 +80,7 @@ export async function middleware(request: NextRequest) {
     userRole = 'ADMIN' // Allow scheduler to act as ADMIN
   } else if (sessionToken) {
     try {
-      const verified = await jwtVerify(sessionToken, encodedKey, {
+      const verified = await jwtVerify(sessionToken, getEncodedKey(), {
         algorithms: ["HS256"],
       })
       isAuthenticated = true
