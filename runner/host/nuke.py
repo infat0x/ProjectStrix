@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Project Strix — Host Cleanup & Uninstallation Script
+Completely removes Strix PM2 services, PostgreSQL database, and temporary directories.
+"""
+
 import os
 import sys
 import subprocess
@@ -21,6 +26,14 @@ def print_success(msg):
 
 def print_error(msg):
     print(f"{Colors.FAIL}✖ {msg}{Colors.ENDC}")
+
+def get_project_root():
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.exists(os.path.join(current_dir, "strix-dashboard")):
+        return current_dir
+    if os.path.exists(os.path.join(current_dir, "..", "strix-dashboard")):
+        return os.path.abspath(os.path.join(current_dir, ".."))
+    return os.path.abspath(os.path.join(current_dir, "..", ".."))
 
 def run_cmd(cmd, fail_on_error=False, shell=True):
     try:
@@ -55,9 +68,9 @@ def confirm_clean():
     print(" - The Next.js PM2 Background Service (strix-dashboard)")
     print(" - The PostgreSQL Database ('strix') and all user/scan data")
     print(" - The PostgreSQL User ('strix_user')")
-    print(" - The Strix Core Python CLI tool and /opt/strix_core source")
+    print(" - The Strix Core Python CLI tool and /root/.strix")
     print(" - The temporary scanning folders (/tmp/strix_runs)")
-    print(" - The node_modules and .next cache inside this directory")
+    print(" - The node_modules and .next cache inside strix-dashboard")
     print("\nAre you absolutely sure you want to proceed? Type 'YES' to confirm.")
     
     confirm = input("Type YES: ")
@@ -69,7 +82,7 @@ def stop_and_remove_services():
     print_step("Stopping and removing PM2 services...")
     run_cmd("pm2 delete strix-dashboard")
     run_cmd("pm2 save")
-    run_cmd("fuser -k 80/tcp")
+    run_cmd("fuser -k 48080/tcp")
     print_success("Services stopped.")
 
 def remove_database():
@@ -89,14 +102,14 @@ def clean_local_files():
     print_step("Cleaning local workspace files...")
     run_cmd("rm -rf /tmp/strix_runs")
     
-    dashboard_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), "strix-dashboard")
+    dashboard_dir = os.path.join(get_project_root(), "strix-dashboard")
     if os.path.exists(dashboard_dir):
         run_cmd(f"cd {dashboard_dir} && rm -rf node_modules .next")
         
     print_success("Cache and temporary files cleaned.")
 
 def main():
-    print(f"\n{Colors.FAIL}{Colors.BOLD}=== STRIX GLOBAL CLEANUP ==={Colors.ENDC}\n")
+    print(f"\n{Colors.FAIL}{Colors.BOLD}=== STRIX HOST CLEANUP ==={Colors.ENDC}\n")
     check_root()
     confirm_clean()
     
@@ -108,7 +121,7 @@ def main():
     print(f"\n{Colors.OKGREEN}{Colors.BOLD}🎉 CLEANUP COMPLETE!{Colors.ENDC}")
     print("Strix has been successfully removed from this server.")
     print("You can now safely delete this project directory if you wish:")
-    print(f"rm -rf {os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))}")
+    print(f"rm -rf {get_project_root()}\n")
 
 if __name__ == "__main__":
     main()

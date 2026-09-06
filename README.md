@@ -40,22 +40,25 @@ We provide a robust Python orchestration script that automatically handles syste
 git clone https://github.com/infat0x/ProjectStrix.git
 cd ProjectStrix
 
-# Run the global orchestrator
-sudo python3 runner/deploy.py
+# Option A: 1-Click Podman / Container Deployment (Linux, Windows, WSL2)
+python3 runner/podman/deploy.py
+
+# Option B: Native Linux Server / Bare-Metal Deployment (Ubuntu/Debian)
+sudo python3 runner/host/deploy.py
 ```
 
 > [!IMPORTANT]
-> The deployment script is completely idempotent. If your `dpkg` is locked or your OS is missing essential `locales` (which often breaks Postgres), the script will automatically self-heal the operating system before continuing.
+> The deployment scripts are completely idempotent and self-healing.
 
 ---
 
-##  Repository Structure
+## 📂 Repository Structure
 
 - `strix-dashboard/` — The Next.js Web Application (React, Tailwind CSS, Prisma ORM).
 - `strix/` — The Python-based AI agent core and CLI executable.
 - `docs/` — The VitePress documentation source files (auto-deployed to GitHub pages).
-- `runner/deploy.py` — The unified installation, self-healing, and update orchestrator.
-- `runner/nuke.py` — Script to completely clean the environment and uninstall Strix.
+- `runner/host/` — Native bare-metal deployment (`deploy.py`), uninstallation (`nuke.py`), and backup (`backup.sh`).
+- `runner/podman/` — Cross-platform container deployment (`deploy.py`, `deploy.sh`, `deploy.ps1`, `deploy.bat`).
 
 ---
 

@@ -16,8 +16,8 @@ We provide an idempotent, self-healing Python orchestrator script that:
 
 ### Run on Linux / VPS:
 ```bash
-python3 runner/deploy_podman.py
-# or: bash runner/deploy_podman.sh
+python3 runner/podman/deploy.py
+# or: bash runner/podman/deploy.sh
 # or: npm run deploy:podman
 ```
 
@@ -25,13 +25,13 @@ python3 runner/deploy_podman.py
 The script automatically detects Windows and seamlessly bridges to WSL2 (or native Podman Desktop):
 ```powershell
 # In PowerShell:
-.\runner\deploy_podman.ps1
+.\runner\podman\deploy.ps1
 
 # Or in Command Prompt:
-runner\deploy_podman.bat
+runner\podman\deploy.bat
 
 # Or directly in WSL2 (Ubuntu):
-python3 runner/deploy_podman.py
+python3 runner/podman/deploy.py
 ```
 > [!NOTE]
 > When running inside WSL2, Podman container ports are automatically mapped to your Windows host, meaning you can immediately open `http://localhost:48080` in your Windows browser!

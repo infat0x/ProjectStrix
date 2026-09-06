@@ -2,7 +2,7 @@
 $ErrorActionPreference = "Stop"
 
 $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
-$RootDir = Split-Path -Parent $ScriptDir
+$RootDir = Split-Path -Parent (Split-Path -Parent $ScriptDir)
 Set-Location $RootDir
 
 Write-Host "==================================================================" -ForegroundColor Cyan
@@ -16,7 +16,7 @@ if (-not $PythonCmd) {
 }
 
 if ($PythonCmd) {
-    & $PythonCmd.Source "runner/deploy_podman.py"
+    & $PythonCmd.Source "runner/podman/deploy.py"
     exit $LASTEXITCODE
 }
 
@@ -30,8 +30,8 @@ if ($WslCmd) {
     # Ensure dependencies in WSL
     wsl -u root bash -c "command -v podman >/dev/null 2>&1 || (apt-get update && apt-get install -y podman podman-compose python3)"
     
-    # Run deploy_podman.py inside WSL
-    wsl bash -c "cd '$WslPath' && python3 runner/deploy_podman.py"
+    # Run deploy.py inside WSL
+    wsl bash -c "cd '$WslPath' && python3 runner/podman/deploy.py"
     exit $LASTEXITCODE
 }
 

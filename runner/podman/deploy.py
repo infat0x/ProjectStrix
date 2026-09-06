@@ -35,8 +35,17 @@ def print_warn(msg):
 def print_error(msg):
     print(f"{Colors.FAIL}✖ {msg}{Colors.ENDC}")
 
+def get_project_root():
+    """Dynamically determine the root ProjectStrix directory."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.exists(os.path.join(current_dir, "podman-compose.yml")):
+        return current_dir
+    if os.path.exists(os.path.join(current_dir, "..", "podman-compose.yml")):
+        return os.path.abspath(os.path.join(current_dir, ".."))
+    return os.path.abspath(os.path.join(current_dir, "..", ".."))
+
 def is_wsl():
-    """Detect if the script is running inside Windows Subsystem for Linux (WSL)."""
+    """Detect if running inside Windows Subsystem for Linux (WSL)."""
     if os.path.exists("/proc/version"):
         try:
             with open("/proc/version", "r") as f:
@@ -102,7 +111,7 @@ def handle_windows_host(project_root):
             run_cmd("wsl -u root apt-get update && wsl -u root apt-get install -y podman podman-compose python3", fail_on_error=False)
 
         print_step(f"Executing deployment in WSL2 at {wsl_dir}...")
-        bridge_cmd = f'wsl bash -c "cd {wsl_dir} && python3 runner/deploy_podman.py"'
+        bridge_cmd = f'wsl bash -c "cd {wsl_dir} && python3 runner/podman/deploy.py"'
         exit_code = subprocess.call(bridge_cmd, shell=True)
         sys.exit(exit_code)
 
@@ -282,7 +291,7 @@ def main():
     print(f"{Colors.OKCYAN}{Colors.BOLD}║    PROJECT STRIX — 1-CLICK PODMAN AUTO-DEPLOYER (LINUX/WSL2)     ║{Colors.ENDC}")
     print(f"{Colors.OKCYAN}{Colors.BOLD}╚══════════════════════════════════════════════════════════════════╝{Colors.ENDC}\n")
 
-    project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+    project_root = get_project_root()
     os.chdir(project_root)
 
     # 1. Check OS and Environment

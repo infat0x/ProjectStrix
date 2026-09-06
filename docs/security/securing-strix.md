@@ -59,4 +59,4 @@ sudo ufw enable
 
 ## 3. Database Security
 
-The `runner/deploy.py` script automatically configures PostgreSQL to only listen on `127.0.0.1` and enforces `md5` password authentication via `pg_hba.conf`. Do not expose port `5432` to the internet.
+The `runner/host/deploy.py` script automatically configures PostgreSQL to only listen on `127.0.0.1` and enforces `scram-sha-256` password authentication via `pg_hba.conf`. Do not expose port `5432` to the internet.

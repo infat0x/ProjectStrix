@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+"""
+Project Strix — Bare-Metal / Native Linux Host Deployment Orchestrator
+Idempotent, self-healing installation for Ubuntu/Debian servers (PostgreSQL + PM2 + Next.js).
+"""
+
 import os
 import sys
 import subprocess
@@ -24,6 +29,18 @@ def print_success(msg):
 
 def print_error(msg):
     print(f"{Colors.FAIL}✖ {msg}{Colors.ENDC}")
+
+def get_project_root():
+    """Dynamically determine the root ProjectStrix directory."""
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    if os.path.exists(os.path.join(current_dir, "strix-dashboard")):
+        return current_dir
+    if os.path.exists(os.path.join(current_dir, "..", "strix-dashboard")):
+        return os.path.abspath(os.path.join(current_dir, ".."))
+    return os.path.abspath(os.path.join(current_dir, "..", ".."))
+
+def get_dashboard_dir():
+    return os.path.join(get_project_root(), "strix-dashboard")
 
 def run_cmd(cmd, fail_on_error=True, shell=True, env=None):
     """Run a shell command and return its exit code and output."""
@@ -52,7 +69,7 @@ def check_root():
     print_step("Checking permissions...")
     if os.geteuid() != 0:
         print_error("This script must be run as root (use sudo).")
-        print("Example: sudo python3 runner/deploy.py")
+        print("Example: sudo python3 runner/host/deploy.py")
         sys.exit(1)
     print_success("Running as root.")
 
@@ -85,7 +102,7 @@ def get_db_password():
     otherwise generate a fresh random one. Never use a hardcoded default."""
     import secrets
     import re
-    dashboard_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), "strix-dashboard")
+    dashboard_dir = get_dashboard_dir()
     env_file = os.path.join(dashboard_dir, ".env")
     if os.path.exists(env_file):
         try:
@@ -217,7 +234,7 @@ def install_strix():
 
 def setup_dashboard(db_pass):
     print_step("Setting up Strix Dashboard...")
-    dashboard_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), "strix-dashboard")
+    dashboard_dir = get_dashboard_dir()
     if not os.path.exists(dashboard_dir):
         print_error(f"Dashboard directory not found at: {dashboard_dir}")
         sys.exit(1)
@@ -286,7 +303,7 @@ def setup_dashboard(db_pass):
 
 def deploy_service():
     print_step("Deploying Strix Dashboard as a PM2 Service...")
-    dashboard_dir = os.path.join(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')), "strix-dashboard")
+    dashboard_dir = get_dashboard_dir()
     
     # Kill any process on port 48080 to prevent EADDRINUSE
     run_cmd("fuser -k 48080/tcp", fail_on_error=False)
@@ -305,7 +322,7 @@ def deploy_service():
     print_success("Deployment completed successfully. The application is running in the background.")
 
 def main():
-    print(f"\n{Colors.OKCYAN}{Colors.BOLD}=== STRIX GLOBAL AUTO-DEPLOYER ==={Colors.ENDC}\n")
+    print(f"\n{Colors.OKCYAN}{Colors.BOLD}=== STRIX HOST AUTO-DEPLOYER (LINUX / BARE-METAL) ==={Colors.ENDC}\n")
     check_root()
     install_system_packages()
     db_pass = get_db_password()
@@ -315,9 +332,9 @@ def main():
     setup_dashboard(db_pass)
     deploy_service()
     
-    print(f"\n{Colors.OKGREEN}{Colors.BOLD}🎉 ALL DONE! Strix is now live.{Colors.ENDC}")
+    print(f"\n{Colors.OKGREEN}{Colors.BOLD}🎉 ALL DONE! Strix is now live on the host.{Colors.ENDC}")
     print(f"\n{Colors.OKCYAN}{Colors.BOLD}=== USEFUL COMMANDS ==={Colors.ENDC}")
-    print(f"{Colors.BOLD}Dashboard UI:{Colors.ENDC}    http://<your-server-ip>")
+    print(f"{Colors.BOLD}Dashboard UI:{Colors.ENDC}    http://<your-server-ip>:48080")
     print(f"{Colors.BOLD}App Logs:{Colors.ENDC}        sudo pm2 logs strix-dashboard")
     print(f"{Colors.BOLD}App Status:{Colors.ENDC}      sudo pm2 status")
     print(f"{Colors.BOLD}Restart App:{Colors.ENDC}     sudo pm2 restart strix-dashboard")

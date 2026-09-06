@@ -4,7 +4,9 @@ As Project Strix is continuously developed, you may want to pull the latest chan
 
 ## The Auto-Deployer Method
 
-The easiest and safest way to update your Strix deployment is to use the exact same script you used to install it. The `runner/deploy.py` script is idempotent, meaning it is perfectly safe to run multiple times. It will automatically detect existing configurations, apply any new database schema migrations, and rebuild the UI.
+The easiest and safest way to update your Strix deployment is to use the exact same script you used to install it:
+- For Native Linux hosts: `runner/host/deploy.py`
+- For Podman / Containers: `runner/podman/deploy.py`
 
 1. SSH into your server.
 2. Navigate to your installation directory:
@@ -18,7 +20,11 @@ The easiest and safest way to update your Strix deployment is to use the exact s
    ```
 4. Run the auto-deployer script:
    ```bash
-   sudo python3 runner/deploy.py
+   # For Host / PM2:
+   sudo python3 runner/host/deploy.py
+
+   # Or for Podman:
+   python3 runner/podman/deploy.py
    ```
 
 The script will:
@@ -26,7 +32,7 @@ The script will:
 - Fix broken `dpkg` or missing locales automatically.
 - Re-run `npm install` and `npm run build` for the Next.js app.
 - Apply new `prisma db push` migrations.
-- Gracefully restart the PM2 processes.
+- Gracefully restart the PM2 processes or containers.
 
 ```mermaid
 %%{init: {'theme': 'dark', 'themeVariables': { 'primaryColor': '#dc2626', 'edgeLabelBackground':'#1e1e20' }}}%%
@@ -47,4 +53,4 @@ graph TD
 ```
 
 ## Important Note on Data Loss
-Using `runner/deploy.py` will run `npx prisma db push --accept-data-loss`. In development phases, this is perfectly fine. However, if structural schema changes occur that delete tables or columns, this command *could* result in data loss for those specific columns. Always back up your PostgreSQL database before updating critical production environments!
+Using `runner/host/deploy.py` will run `npx prisma db push --accept-data-loss`. In development phases, this is perfectly fine. However, if structural schema changes occur that delete tables or columns, this command *could* result in data loss for those specific columns. Always back up your PostgreSQL database (`bash runner/host/backup.sh`) before updating critical production environments!

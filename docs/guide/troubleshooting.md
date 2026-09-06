@@ -15,7 +15,7 @@ sudo pm2 log strix-dashboard --lines 100
 ```
 
 **Common Causes:**
-- **ENOENT (Agent Not Found):** The system cannot find the `strix` executable. Ensure you ran the `runner/deploy.py` script as `root`.
+- **ENOENT (Agent Not Found):** The system cannot find the `strix` executable. Ensure you ran the `runner/host/deploy.py` script as `root`.
 - **API Key Missing:** You selected an LLM provider (like OpenAI) but haven't saved the corresponding API Key in the Settings panel.
 
 ## 2. "Database Locked" or Prisma Errors
@@ -26,7 +26,7 @@ If you restarted the server forcefully during a database migration, Prisma might
 > The easiest way to self-heal the database is to run the official deployment script again. It is idempotent and will repair broken connections.
 
 ```bash
-sudo python3 runner/deploy.py
+sudo python3 runner/host/deploy.py
 ```
 
 Alternatively, to manually push the database schema:

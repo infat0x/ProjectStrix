@@ -8,7 +8,8 @@
     "build": "cd strix-dashboard && npm run build",
     "dev": "cd strix-dashboard && npm run dev",
     "start": "cd strix-dashboard && npm start",
-    "deploy:podman": "python3 runner/deploy_podman.py"
+    "deploy:podman": "python3 runner/podman/deploy.py",
+    "deploy:host": "sudo python3 runner/host/deploy.py"
   },
   "keywords": [
     "security",

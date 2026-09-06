@@ -1,6 +1,6 @@
 # Ubuntu / Debian Deployment
 
-Deploying Project Strix on a fresh Ubuntu or Debian server is exceptionally straightforward. We have engineered a robust, **self-healing auto-deployer** (`runner/deploy.py`) that manages the entire lifecycle of the installation.
+Deploying Project Strix on a fresh Ubuntu or Debian server is exceptionally straightforward. We have engineered a robust, **self-healing auto-deployer** (`runner/host/deploy.py`) that manages the entire lifecycle of the installation.
 
 ## Step 1: Clone the Repository
 
@@ -16,12 +16,12 @@ cd ProjectStrix
 Execute the deployment script with root privileges (required for installing system packages and databases):
 
 ```bash
-sudo python3 runner/deploy.py
+sudo python3 runner/host/deploy.py
 ```
 
 ### What happens under the hood?
 
-Unlike typical installation scripts that blindly run commands, `runner/deploy.py` is an intelligent orchestrator:
+Unlike typical installation scripts that blindly run commands, `runner/host/deploy.py` is an intelligent orchestrator:
 
 1. **System Dependencies & Self-Healing:**
    - It checks for missing packages (Node.js, PM2, Python libs).

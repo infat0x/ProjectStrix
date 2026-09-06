@@ -1,10 +1,9 @@
 #!/bin/bash
-# Strix Database Backup Script
-# This script creates a compressed backup of the Strix database.
+# Strix Database Backup Script (Host Mode)
+# This script creates a compressed backup of the Strix database on a native host.
 
-# Determine the directory where the project is located (parent of runner folder)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" &> /dev/null && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+PROJECT_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 
 BACKUP_DIR="$PROJECT_DIR/strix_backups"
 mkdir -p "$BACKUP_DIR"
@@ -17,6 +16,6 @@ sudo -u postgres pg_dump strix | gzip > "$BACKUP_FILE"
 chmod 600 "$BACKUP_FILE"
 
 # Keep only the last 10 backups to save space
-ls -1t "$BACKUP_DIR"/strix_db_backup_*.sql.gz | tail -n +11 | xargs -r rm --
+ls -1t "$BACKUP_DIR"/strix_db_backup_*.sql.gz 2>/dev/null | tail -n +11 | xargs -r rm -- 2>/dev/null || true
 
-echo "Backup completed successfully."
+echo "Backup completed successfully: $BACKUP_FILE"

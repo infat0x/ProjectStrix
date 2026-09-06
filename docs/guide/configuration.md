@@ -1,6 +1,6 @@
 # Configuration
 
-If you used the `runner/deploy.py` script, initial configuration is completely handled for you. However, you may need to tweak environment variables for advanced setups (like changing the server port or externalizing the database).
+If you used the `runner/host/deploy.py` script, initial configuration is completely handled for you. However, you may need to tweak environment variables for advanced setups (like changing the server port or externalizing the database).
 
 ## The `.env` File
 
@@ -27,7 +27,7 @@ In a true production environment, you should replace the `JWT_SECRET` with a cry
 
 ## Changing the UI Port
 
-By default, the `runner/deploy.py` script launches the Strix Next.js Dashboard on port `48080` via PM2. 
+By default, the `runner/host/deploy.py` script launches the Strix Next.js Dashboard on port `48080` via PM2. 
 
 If you want to change this (for example, to standard HTTP port 80), you can modify the PM2 start command:
 
