@@ -71,18 +71,18 @@ function sevClass(s: string) {
 }
 
 function SecurityScoreGauge({ score }: { score: number }) {
-  const radius = 38;
-  const stroke = 6;
+  const radius = 30;
+  const stroke = 5;
   const normalizedRadius = radius - stroke;
   const circumference = normalizedRadius * 2 * Math.PI;
   const strokeDashoffset = circumference - (score / 100) * circumference;
   const color = score >= 75 ? "var(--sev-low)" : score >= 45 ? "var(--sev-medium)" : "var(--sev-critical)";
 
   return (
-    <div style={{ position: "relative", width: 84, height: 84, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+    <div style={{ position: "relative", width: 68, height: 68, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
       <svg height={radius * 2 + 8} width={radius * 2 + 8} style={{ transform: "rotate(-90deg)" }}>
         <circle
-          stroke="rgba(255,255,255,0.07)"
+          stroke="rgba(255,255,255,0.08)"
           fill="transparent"
           strokeWidth={stroke}
           r={normalizedRadius}
@@ -102,8 +102,8 @@ function SecurityScoreGauge({ score }: { score: number }) {
         />
       </svg>
       <div style={{ position: "absolute", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
-        <span style={{ fontSize: 18, fontWeight: 800, color, lineHeight: 1 }}>{score}</span>
-        <span style={{ fontSize: 8.5, color: "var(--fg-3)", fontWeight: 700, letterSpacing: "0.5px" }}>/100</span>
+        <span style={{ fontSize: 16, fontWeight: 800, color, lineHeight: 1 }}>{score}</span>
+        <span style={{ fontSize: 8, color: "var(--fg-3)", fontWeight: 700, letterSpacing: "0.5px" }}>SCORE</span>
       </div>
     </div>
   );
@@ -148,7 +148,8 @@ function LiveThreatTicker({ scans, activeCount }: { scans: Scan[]; activeCount: 
             height: 7,
             borderRadius: "50%",
             background: activeCount > 0 ? "var(--sev-critical)" : "var(--sev-low)",
-            boxShadow: `0 0 8px ${activeCount > 0 ? "var(--sev-critical)" : "var(--sev-low)"}`
+            boxShadow: `0 0 8px ${activeCount > 0 ? "var(--sev-critical)" : "var(--sev-low)"}`,
+            animation: activeCount > 0 ? "pulse 1.5s infinite" : "none"
           }} />
           <span style={{ color: "var(--fg)", fontWeight: 700, letterSpacing: "0.5px" }}>
             STRIX DEFENSE ORCHESTRATOR
@@ -249,89 +250,75 @@ export default function Dashboard() {
       {/* Live Threat Terminal Ticker */}
       <LiveThreatTicker scans={scans} activeCount={activeScans} />
 
-      {/* Intro */}
-      <div className="page-intro">
-        <h1 className="page-heading">Security Overview</h1>
-        <p className="page-desc">
-          Monitor your security posture, active scanning agents, and perimeter threat metrics.
-        </p>
+      {/* Intro Header with Unified Action Buttons */}
+      <div className="page-intro" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14, marginBottom: 16 }}>
+        <div>
+          <h1 className="page-heading">Security Overview</h1>
+          <p className="page-desc">
+            Monitor your security posture, active scanning agents, and perimeter threat metrics.
+          </p>
+        </div>
+
+        {/* Quick Action Buttons Group */}
+        <div style={{ display: "flex", gap: 8, alignItems: "center", flexWrap: "wrap" }}>
+          <Link
+            href="/scans?new=1"
+            className="btn-primary"
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, background: "var(--sev-critical)", color: "#fff", border: "1px solid var(--sev-critical-bd)" }}
+          >
+            <Radar size={14} /> Launch Scan
+          </Link>
+          <Link
+            href="/assets"
+            className="btn-secondary"
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5 }}
+          >
+            <Globe size={14} /> Assets
+          </Link>
+          <Link
+            href="/compliance"
+            className="btn-secondary"
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5 }}
+          >
+            <ShieldCheck size={14} /> Compliance
+          </Link>
+          <Link
+            href="/tools"
+            className="btn-secondary"
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5 }}
+          >
+            <Wrench size={14} /> Hacker Tools
+          </Link>
+        </div>
       </div>
 
-      {/* Quick Action Bar */}
-      <div style={{
-        display: "grid",
-        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-        gap: 10,
-        marginBottom: 18
-      }}>
-        <Link href="/scans?new=1" className="stat-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textDecoration: "none" }}>
-          <div style={{ width: 34, height: 34, borderRadius: "var(--r)", background: "rgba(225, 29, 72, 0.15)", border: "1px solid rgba(225, 29, 72, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--sev-critical)" }}>
-            <Radar size={16} />
-          </div>
-          <div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg)" }}>Launch Scan</div>
-            <div style={{ fontSize: 11, color: "var(--fg-3)" }}>Autonomous AI pentest</div>
-          </div>
-        </Link>
-
-        <Link href="/assets" className="stat-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textDecoration: "none" }}>
-          <div style={{ width: 34, height: 34, borderRadius: "var(--r)", background: "rgba(14, 165, 233, 0.15)", border: "1px solid rgba(14, 165, 233, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--sev-low)" }}>
-            <Globe size={16} />
-          </div>
-          <div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg)" }}>Asset Inventory</div>
-            <div style={{ fontSize: 11, color: "var(--fg-3)" }}>Scope & attack surface</div>
-          </div>
-        </Link>
-
-        <Link href="/compliance" className="stat-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textDecoration: "none" }}>
-          <div style={{ width: 34, height: 34, borderRadius: "var(--r)", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--sev-low)" }}>
-            <ShieldCheck size={16} />
-          </div>
-          <div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg)" }}>OWASP Top 10</div>
-            <div style={{ fontSize: 11, color: "var(--fg-3)" }}>Regulatory benchmark</div>
-          </div>
-        </Link>
-
-        <Link href="/tools" className="stat-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textDecoration: "none" }}>
-          <div style={{ width: 34, height: 34, borderRadius: "var(--r)", background: "rgba(168, 85, 247, 0.15)", border: "1px solid rgba(168, 85, 247, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#a855f7" }}>
-            <Wrench size={16} />
-          </div>
-          <div>
-            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg)" }}>Hacker Toolkit</div>
-            <div style={{ fontSize: 11, color: "var(--fg-3)" }}>JWT, payloads & codecs</div>
-          </div>
-        </Link>
-      </div>
-
-      {/* Stats */}
-      <div className="stats-grid">
-        {/* Score with Gauge */}
-        <div className="stat-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
-          <div>
+      {/* Stats Grid - Symmetrical & Balanced */}
+      <div className="stats-grid" style={{ marginBottom: 20 }}>
+        {/* Card 1: Score with Gauge */}
+        <div className="stat-card" style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 130 }}>
+          <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div className="stat-label">
               <span className="stat-label-text">Security Score</span>
               <Shield size={14} className="stat-label-icon" />
             </div>
-            <div className={`stat-value${score >= 70 ? " success" : score >= 40 ? " warning" : " danger"}`} style={{ fontSize: 24, marginTop: 4 }}>
+            <div className={`stat-value${score >= 70 ? " success" : score >= 40 ? " warning" : " danger"}`} style={{ fontSize: 28, lineHeight: 1 }}>
               {score}
               <span style={{ fontSize: 13, fontWeight: 400, opacity: 0.5 }}>/100</span>
             </div>
-            <div className="stat-sub" style={{ marginTop: 2 }}>
-              {score >= 70 ? "Good posture" : score >= 40 ? "Fair posture" : "Critical risk"}
+            <div className="stat-sub">
+              {score >= 70 ? "Optimal posture" : score >= 40 ? "Elevated risk" : "Critical risk"}
             </div>
           </div>
           <SecurityScoreGauge score={score} />
         </div>
 
-        {/* Critical */}
-        <div className="stat-card">
+        {/* Card 2: Critical Vulns */}
+        <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 130 }}>
           <div className="stat-label">
-            <span className="stat-label-text">Critical Vulns</span>
+            <span className="stat-label-text">Critical Threats</span>
             <AlertTriangle size={14} className="stat-label-icon" />
           </div>
-          <div className={`stat-value${criticalVulns > 0 ? " danger" : ""}`}>
+          <div className={`stat-value${criticalVulns > 0 ? " danger" : ""}`} style={{ fontSize: 28, lineHeight: 1 }}>
             {criticalVulns}
           </div>
           <div className="stat-sub">
@@ -339,25 +326,29 @@ export default function Dashboard() {
           </div>
         </div>
 
-        {/* Active */}
-        <div className="stat-card">
+        {/* Card 3: Active Scans */}
+        <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 130 }}>
           <div className="stat-label">
             <span className="stat-label-text">Active Scans</span>
             <Activity size={14} className="stat-label-icon" />
           </div>
-          <div className="stat-value">{activeScans}</div>
+          <div className="stat-value" style={{ fontSize: 28, lineHeight: 1 }}>
+            {activeScans}
+          </div>
           <div className="stat-sub">
             {activeScans > 0 ? "Agents currently analyzing" : "All agents idle"}
           </div>
         </div>
 
-        {/* Total */}
-        <div className="stat-card">
+        {/* Card 4: Total Findings */}
+        <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 130 }}>
           <div className="stat-label">
             <span className="stat-label-text">Total Findings</span>
             <Target size={14} className="stat-label-icon" />
           </div>
-          <div className="stat-value">{totalVulns}</div>
+          <div className="stat-value" style={{ fontSize: 28, lineHeight: 1 }}>
+            {totalVulns}
+          </div>
           <div className="stat-sub">Across {scans.length} historical scans</div>
         </div>
       </div>
@@ -378,9 +369,20 @@ export default function Dashboard() {
 
           {scans.length === 0 ? (
             <div className="empty-state">
-              <p>No scans initiated yet.</p>
-              <Link href="/scans?new=1" className="btn-primary" style={{ marginTop: 4 }}>
-                <Shield size={14} /> Start First Scan
+              <Radar size={32} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
+              <p>No security scans initiated yet.</p>
+              <Link
+                href="/scans?new=1"
+                className="btn-primary"
+                style={{
+                  marginTop: 8,
+                  background: "var(--sev-critical)",
+                  color: "#fff",
+                  border: "1px solid var(--sev-critical-bd)",
+                  boxShadow: "0 2px 12px rgba(225,29,72,0.3)"
+                }}
+              >
+                <Radar size={14} /> Start First Pentest
               </Link>
             </div>
           ) : (
@@ -437,7 +439,8 @@ export default function Dashboard() {
 
           {recentVulns.length === 0 ? (
             <div className="empty-state">
-              <p>No vulnerabilities found in recent scans.</p>
+              <ShieldCheck size={32} style={{ opacity: 0.2, margin: "0 auto 8px" }} />
+              <p>No vulnerabilities detected in recent assessments.</p>
             </div>
           ) : (
             <div>

