@@ -336,7 +336,7 @@ export default function AssetsPage() {
         </div>
 
         {/* High-Risk Targets */}
-        <div className="stat-card" style={{ borderLeft: highRiskCount > 0 ? "3px solid var(--sev-critical)" : undefined }}>
+        <div className="stat-card">
           <div className="stat-label">
             <span className="stat-label-text">High-Risk Targets</span>
             <ShieldAlert size={14} className="stat-label-icon" style={{ color: "var(--sev-critical)" }} />

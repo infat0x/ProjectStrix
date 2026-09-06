@@ -237,7 +237,7 @@ export default function GlobalSearchModal({ isOpen, onClose }: GlobalSearchModal
                     onClick={() => handleVulnClick(vuln.scanId)}
                     onMouseEnter={() => setSelectedIndex(globalIdx)}
                   >
-                    <div className="result-icon-wrapper" style={{ borderLeft: `3px solid ${severityColor(vuln.severity)}` }}>
+                    <div className="result-icon-wrapper">
                       <ShieldAlert size={16} />
                     </div>
                     <div className="result-content">

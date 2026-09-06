@@ -130,7 +130,6 @@ function LiveThreatTicker({ scans, activeCount }: { scans: Scan[]; activeCount: 
       justifyContent: "space-between",
       background: "rgba(0,0,0,0.5)",
       border: "1px solid rgba(255,255,255,0.08)",
-      borderLeft: `3px solid ${activeCount > 0 ? "var(--sev-critical)" : "var(--sev-low)"}`,
       borderRadius: "var(--r)",
       padding: "8px 14px",
       fontSize: 11.5,

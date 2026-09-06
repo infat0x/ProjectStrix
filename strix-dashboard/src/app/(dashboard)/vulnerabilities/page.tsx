@@ -629,16 +629,15 @@ ${v.remediation || "Enforce strict input validation, authorization checks, and d
                       className="trow"
                       style={{
                         cursor: "pointer",
-                        background: isSelected ? "var(--bg-3)" : `var(--sev-${v.severity.toLowerCase() === "info" ? "informative" : v.severity.toLowerCase()}-bg)`,
-                        borderBottom: "1px solid rgba(255, 255, 255, 0.03)",
-                        borderLeft: `2px solid var(--sev-${v.severity.toLowerCase() === "info" ? "informative" : v.severity.toLowerCase()})`,
+                        background: isSelected ? "var(--bg-3)" : "transparent",
+                        borderBottom: "1px solid var(--border)",
                         transition: "background 0.2s"
                       }}
                       onMouseEnter={(e) => {
-                        if (!isSelected) e.currentTarget.style.background = "var(--bg-3)";
+                        if (!isSelected) e.currentTarget.style.background = "var(--bg-2)";
                       }}
                       onMouseLeave={(e) => {
-                        if (!isSelected) e.currentTarget.style.background = `var(--sev-${v.severity.toLowerCase() === "info" ? "informative" : v.severity.toLowerCase()}-bg)`;
+                        if (!isSelected) e.currentTarget.style.background = "transparent";
                       }}
                     >
                       {selectionMode && (
@@ -875,7 +874,6 @@ ${v.remediation || "Enforce strict input validation, authorization checks, and d
                             style={{
                               background: isCardActive ? "var(--bg-3)" : "var(--bg-2)",
                               border: `1px solid ${isCardActive ? "var(--border-hi)" : "var(--border)"}`,
-                              borderLeft: `3px solid var(--sev-${v.severity.toLowerCase() === "info" ? "informative" : v.severity.toLowerCase()})`,
                               borderRadius: "var(--r-sm)",
                               padding: "12px",
                               cursor: "pointer",

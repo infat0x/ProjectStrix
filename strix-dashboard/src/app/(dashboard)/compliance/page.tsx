@@ -340,7 +340,7 @@ export default function CompliancePage() {
       {/* KPI Cards */}
       <div className="stats-grid" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", marginBottom: 20 }}>
         {/* Compliance Score */}
-        <div className="stat-card" style={{ borderLeft: `3px solid ${complianceScore.score >= 75 ? "var(--sev-low)" : complianceScore.score >= 50 ? "var(--sev-medium)" : "var(--sev-critical)"}` }}>
+        <div className="stat-card">
           <div className="stat-label">
             <span className="stat-label-text">Compliance Health</span>
             <Award size={14} className="stat-label-icon" />
@@ -458,9 +458,8 @@ export default function CompliancePage() {
                     key={cat.id}
                     onClick={() => setSelectedCatId(isSelected ? null : cat.id)}
                     style={{
-                      background: isSelected ? "var(--bg-3)" : isPassing ? "var(--bg-1)" : "var(--sev-critical-bg)",
-                      border: `1px solid ${isSelected ? "var(--border-hi)" : isPassing ? "var(--border)" : "var(--sev-critical-bd)"}`,
-                      borderLeft: `4px solid ${isPassing ? "var(--sev-low)" : stat.critical > 0 ? "var(--sev-critical)" : stat.high > 0 ? "var(--sev-high)" : "var(--sev-medium)"}`,
+                      background: isSelected ? "var(--bg-3)" : "var(--bg-1)",
+                      border: `1px solid ${isSelected ? "var(--border-hi)" : "var(--border)"}`,
                       borderRadius: "var(--r)",
                       padding: "14px 16px",
                       cursor: "pointer",
@@ -473,7 +472,7 @@ export default function CompliancePage() {
                       if (!isSelected) e.currentTarget.style.borderColor = "var(--border-hi)";
                     }}
                     onMouseLeave={(e) => {
-                      if (!isSelected) e.currentTarget.style.borderColor = isPassing ? "var(--border)" : "var(--sev-critical-bd)";
+                      if (!isSelected) e.currentTarget.style.borderColor = "var(--border)";
                     }}
                   >
                     {/* Header Row */}
@@ -653,7 +652,6 @@ export default function CompliancePage() {
                           style={{
                             background: "var(--bg-2)",
                             border: "1px solid var(--border)",
-                            borderLeft: `3px solid var(--sev-${item.severity.toLowerCase() === "info" ? "informative" : item.severity.toLowerCase()})`,
                             borderRadius: "var(--r-sm)",
                             padding: "12px",
                             display: "flex",

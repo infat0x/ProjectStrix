@@ -152,7 +152,6 @@ ${v.remediation || "Apply proper server-side authentication and input validation
       {/* Right Drawer for PoC details */}
       <div
         className={`glass-panel ${styles.pocDrawer} ${selectedVuln ? styles.pocDrawerOpen : ""}`}
-        style={selectedVuln ? { borderLeft: `2px solid var(--sev-${selectedVuln.severity})` } : {}}
       >
         {selectedVuln ? (
           <div className={styles.pocContent}>
