@@ -119,7 +119,7 @@ def handle_windows_host(project_root):
     sys.exit(exit_code)
 
 def configure_wsl_podman():
-    """Ensure cgroup_manager is set to cgroupfs for rootless WSL2 environments."""
+    """Ensure cgroup_manager is set to cgroupfs and user session is clean for rootless WSL2 environments."""
     if not is_wsl():
         return
     try:
@@ -149,6 +149,20 @@ def configure_wsl_podman():
                     f.write("\n")
                 f.write('unqualified-search-registries = ["docker.io"]\n')
             print_success("Configured unqualified-search-registries in ~/.config/containers/registries.conf.")
+
+        # Clean stale aardvark-dns state & lingering locks if any
+        uid = os.getuid() if hasattr(os, "getuid") else 1000
+        run_cmd(f"rm -rf /run/user/{uid}/containers/networks/aardvark-dns 2>/dev/null", fail_on_error=False)
+
+        # Check systemd user D-Bus session availability in WSL2
+        bus_file = f"/run/user/{uid}/bus"
+        if not os.path.exists(bus_file):
+            run_cmd("systemctl --user start dbus.socket 2>/dev/null || systemctl --user start dbus.service 2>/dev/null", fail_on_error=False)
+            if not os.path.exists(bus_file):
+                print_warn("WSL2 user session bus (/run/user/1000/bus) is currently unreachable.")
+                print(f"{Colors.WARNING}Stale cgroup locks from a previous session are blocking systemd user services.{Colors.ENDC}")
+                print(f"{Colors.BOLD}To fix, run in Windows PowerShell:{Colors.ENDC} {Colors.OKCYAN}wsl --shutdown{Colors.ENDC}")
+                print(f"Then reopen your WSL terminal and re-run: {Colors.BOLD}python3 deploy.py{Colors.ENDC}\n")
     except Exception as e:
         print_warn(f"Could not configure ~/.config/containers: {e}")
 
@@ -361,6 +375,9 @@ def deploy_containers(config_dir, compose_cmd, env_vars):
     env.update(env_vars)
     if is_wsl():
         env["PODMAN_CGROUP_MANAGER"] = "cgroupfs"
+
+    # Remove any conflicting/failed containers from earlier attempts
+    run_cmd("podman rm -f strix-dashboard strix-postgres 2>/dev/null || true", fail_on_error=False)
 
     cmd = f"{compose_cmd} -f {compose_file} up -d --build"
     print(f"Executing in {config_dir}: {cmd}")
