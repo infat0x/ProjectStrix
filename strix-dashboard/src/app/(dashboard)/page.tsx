@@ -9,6 +9,12 @@ import {
   AlertTriangle,
   ArrowRight,
   Loader2,
+  Radar,
+  Globe,
+  ShieldCheck,
+  Wrench,
+  Terminal,
+  Zap,
 } from "lucide-react";
 
 interface Scan {
@@ -64,6 +70,109 @@ function sevClass(s: string) {
   return `sev sev-${normalized}`;
 }
 
+function SecurityScoreGauge({ score }: { score: number }) {
+  const radius = 38;
+  const stroke = 6;
+  const normalizedRadius = radius - stroke;
+  const circumference = normalizedRadius * 2 * Math.PI;
+  const strokeDashoffset = circumference - (score / 100) * circumference;
+  const color = score >= 75 ? "var(--sev-low)" : score >= 45 ? "var(--sev-medium)" : "var(--sev-critical)";
+
+  return (
+    <div style={{ position: "relative", width: 84, height: 84, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0 }}>
+      <svg height={radius * 2 + 8} width={radius * 2 + 8} style={{ transform: "rotate(-90deg)" }}>
+        <circle
+          stroke="rgba(255,255,255,0.07)"
+          fill="transparent"
+          strokeWidth={stroke}
+          r={normalizedRadius}
+          cx={radius + 4}
+          cy={radius + 4}
+        />
+        <circle
+          stroke={color}
+          fill="transparent"
+          strokeWidth={stroke}
+          strokeDasharray={`${circumference} ${circumference}`}
+          style={{ strokeDashoffset, transition: "stroke-dashoffset 0.8s ease-in-out" }}
+          strokeLinecap="round"
+          r={normalizedRadius}
+          cx={radius + 4}
+          cy={radius + 4}
+        />
+      </svg>
+      <div style={{ position: "absolute", textAlign: "center", display: "flex", flexDirection: "column", alignItems: "center" }}>
+        <span style={{ fontSize: 18, fontWeight: 800, color, lineHeight: 1 }}>{score}</span>
+        <span style={{ fontSize: 8.5, color: "var(--fg-3)", fontWeight: 700, letterSpacing: "0.5px" }}>/100</span>
+      </div>
+    </div>
+  );
+}
+
+function LiveThreatTicker({ scans, activeCount }: { scans: Scan[]; activeCount: number }) {
+  const [tickerTime, setTickerTime] = useState("");
+
+  useEffect(() => {
+    const updateTime = () => {
+      setTickerTime(new Date().toTimeString().split(" ")[0]);
+    };
+    updateTime();
+    const interval = setInterval(updateTime, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const latestTarget = scans[0]?.target || "127.0.0.1";
+
+  return (
+    <div style={{
+      display: "flex",
+      alignItems: "center",
+      justifyContent: "space-between",
+      background: "rgba(0,0,0,0.5)",
+      border: "1px solid rgba(255,255,255,0.08)",
+      borderLeft: `3px solid ${activeCount > 0 ? "var(--sev-critical)" : "var(--sev-low)"}`,
+      borderRadius: "var(--r)",
+      padding: "8px 14px",
+      fontSize: 11.5,
+      fontFamily: "var(--font-mono)",
+      marginBottom: 16,
+      overflow: "hidden",
+      boxShadow: "0 2px 12px rgba(0,0,0,0.2)",
+      flexWrap: "wrap",
+      gap: 8
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <span style={{
+            width: 7,
+            height: 7,
+            borderRadius: "50%",
+            background: activeCount > 0 ? "var(--sev-critical)" : "var(--sev-low)",
+            boxShadow: `0 0 8px ${activeCount > 0 ? "var(--sev-critical)" : "var(--sev-low)"}`
+          }} />
+          <span style={{ color: "var(--fg)", fontWeight: 700, letterSpacing: "0.5px" }}>
+            STRIX DEFENSE ORCHESTRATOR
+          </span>
+        </div>
+        <span style={{ color: "var(--fg-3)" }}>|</span>
+        <span style={{ color: activeCount > 0 ? "var(--sev-critical)" : "var(--fg-2)", fontWeight: 600 }}>
+          {activeCount > 0 ? `[ACTIVE SCAN] ${activeCount} Agent(s) Operating` : "[STANDBY] Daemon Ready"}
+        </span>
+        <span style={{ color: "var(--fg-3)" }}>|</span>
+        <span style={{ color: "var(--fg-3)" }}>
+          Latest Target: <span style={{ color: "var(--fg)" }}>{latestTarget}</span>
+        </span>
+      </div>
+
+      <div style={{ display: "flex", alignItems: "center", gap: 8, color: "var(--fg-3)" }}>
+        <span>DAEMON: ACTIVE</span>
+        <span>•</span>
+        <span style={{ color: "var(--fg-2)" }}>{tickerTime}</span>
+      </div>
+    </div>
+  );
+}
+
 export default function Dashboard() {
   const [scans, setScans] = useState<Scan[]>([]);
   const [recentVulns, setRecentVulns] = useState<Vuln[]>([]);
@@ -105,13 +214,10 @@ export default function Dashboard() {
   }, []);
 
   useEffect(() => {
-    // Initial load: fetch everything including vuln details
     fetchData(true);
-    // Periodic poll: only refresh scan statuses (no per-scan detail fetches)
     const interval = setInterval(() => fetchData(false), 8000);
     return () => clearInterval(interval);
   }, [fetchData]);
-
 
   const totalVulns = scans.reduce((s, sc) => s + sc.vulnCount, 0);
   const criticalVulns = recentVulns.filter((v) => v.severity === "critical").length;
@@ -140,33 +246,83 @@ export default function Dashboard() {
 
   return (
     <div className="page">
+      {/* Live Threat Terminal Ticker */}
+      <LiveThreatTicker scans={scans} activeCount={activeScans} />
+
       {/* Intro */}
       <div className="page-intro">
         <h1 className="page-heading">Security Overview</h1>
         <p className="page-desc">
-          Monitor your security posture and active scanning agents.
+          Monitor your security posture, active scanning agents, and perimeter threat metrics.
         </p>
+      </div>
+
+      {/* Quick Action Bar */}
+      <div style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
+        gap: 10,
+        marginBottom: 18
+      }}>
+        <Link href="/scans?new=1" className="stat-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textDecoration: "none" }}>
+          <div style={{ width: 34, height: 34, borderRadius: "var(--r)", background: "rgba(225, 29, 72, 0.15)", border: "1px solid rgba(225, 29, 72, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--sev-critical)" }}>
+            <Radar size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg)" }}>Launch Scan</div>
+            <div style={{ fontSize: 11, color: "var(--fg-3)" }}>Autonomous AI pentest</div>
+          </div>
+        </Link>
+
+        <Link href="/assets" className="stat-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textDecoration: "none" }}>
+          <div style={{ width: 34, height: 34, borderRadius: "var(--r)", background: "rgba(14, 165, 233, 0.15)", border: "1px solid rgba(14, 165, 233, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--sev-low)" }}>
+            <Globe size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg)" }}>Asset Inventory</div>
+            <div style={{ fontSize: 11, color: "var(--fg-3)" }}>Scope & attack surface</div>
+          </div>
+        </Link>
+
+        <Link href="/compliance" className="stat-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textDecoration: "none" }}>
+          <div style={{ width: 34, height: 34, borderRadius: "var(--r)", background: "rgba(16, 185, 129, 0.15)", border: "1px solid rgba(16, 185, 129, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "var(--sev-low)" }}>
+            <ShieldCheck size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg)" }}>OWASP Top 10</div>
+            <div style={{ fontSize: 11, color: "var(--fg-3)" }}>Regulatory benchmark</div>
+          </div>
+        </Link>
+
+        <Link href="/tools" className="stat-card" style={{ padding: "12px 14px", display: "flex", alignItems: "center", gap: 12, cursor: "pointer", textDecoration: "none" }}>
+          <div style={{ width: 34, height: 34, borderRadius: "var(--r)", background: "rgba(168, 85, 247, 0.15)", border: "1px solid rgba(168, 85, 247, 0.3)", display: "flex", alignItems: "center", justifyContent: "center", color: "#a855f7" }}>
+            <Wrench size={16} />
+          </div>
+          <div>
+            <div style={{ fontSize: 12.5, fontWeight: 700, color: "var(--fg)" }}>Hacker Toolkit</div>
+            <div style={{ fontSize: 11, color: "var(--fg-3)" }}>JWT, payloads & codecs</div>
+          </div>
+        </Link>
       </div>
 
       {/* Stats */}
       <div className="stats-grid">
-        {/* Score */}
-        <div className="stat-card">
-          <div className="stat-label">
-            <span className="stat-label-text">Security Score</span>
-            <Shield size={14} className="stat-label-icon" />
+        {/* Score with Gauge */}
+        <div className="stat-card" style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10 }}>
+          <div>
+            <div className="stat-label">
+              <span className="stat-label-text">Security Score</span>
+              <Shield size={14} className="stat-label-icon" />
+            </div>
+            <div className={`stat-value${score >= 70 ? " success" : score >= 40 ? " warning" : " danger"}`} style={{ fontSize: 24, marginTop: 4 }}>
+              {score}
+              <span style={{ fontSize: 13, fontWeight: 400, opacity: 0.5 }}>/100</span>
+            </div>
+            <div className="stat-sub" style={{ marginTop: 2 }}>
+              {score >= 70 ? "Good posture" : score >= 40 ? "Fair posture" : "Critical risk"}
+            </div>
           </div>
-          <div
-            className={`stat-value${
-              score >= 70 ? " success" : score >= 40 ? " warning" : " danger"
-            }`}
-          >
-            {score}
-            <span style={{ fontSize: 14, fontWeight: 400, opacity: 0.5 }}>/100</span>
-          </div>
-          <div className="stat-sub">
-            {score >= 70 ? "Good posture" : score >= 40 ? "Fair posture" : "Critical risk"}
-          </div>
+          <SecurityScoreGauge score={score} />
         </div>
 
         {/* Critical */}

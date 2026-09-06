@@ -11,9 +11,13 @@ const routeTitles: Record<string, string> = {
   "/":               "Overview",
   "/scans":          "Scans",
   "/vulnerabilities":"Vulnerabilities",
+  "/assets":         "Asset Inventory",
+  "/compliance":     "Compliance & OWASP",
+  "/tools":          "Hacker Toolkit",
   "/graph":          "Live Graph",
   "/reports":        "Reports",
   "/logs":           "System Logs",
+  "/instructions":   "Instructions",
   "/api-docs":       "API Docs",
   "/settings":       "Settings",
 };

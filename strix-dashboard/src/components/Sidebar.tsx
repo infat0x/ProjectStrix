@@ -30,13 +30,18 @@ import {
   UserCheck,
   HardDrive,
   BookText,
-  Search
+  Search,
+  Globe,
+  Wrench
 } from "lucide-react";
 
 const navItems = [
   { name: "Overview",         path: "/",               icon: LayoutDashboard },
   { name: "Scans",            path: "/scans",           icon: Radar },
   { name: "Vulnerabilities",  path: "/vulnerabilities", icon: ShieldAlert },
+  { name: "Asset Inventory",  path: "/assets",          icon: Globe },
+  { name: "Compliance",       path: "/compliance",      icon: ShieldCheck },
+  { name: "Hacker Tools",     path: "/tools",           icon: Wrench },
   { name: "Live Graph",       path: "/graph",           icon: Activity },
   { name: "Reports",          path: "/reports",         icon: FileText },
   { name: "System Logs",      path: "/logs",            icon: TerminalSquare },
