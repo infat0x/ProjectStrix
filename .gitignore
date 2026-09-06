@@ -1,6 +1,7 @@
 __pycache__/
 *.pyc
 .env
+.env.podman
 .DS_Store
 .idea/
 .vscode/

@@ -1,0 +1,46 @@
+version: '3.8'
+
+services:
+  strix-db:
+    image: postgres:16-alpine
+    container_name: strix-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-strix_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-strix_change_me_in_env}
+      POSTGRES_DB: ${POSTGRES_DB:-strix}
+    volumes:
+      - strix-db-data:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-strix_user} -d ${POSTGRES_DB:-strix}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  strix-dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: strix-dashboard
+    restart: unless-stopped
+    depends_on:
+      strix-db:
+        condition: service_healthy
+    ports:
+      - "${PORT:-48080}:48080"
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER:-strix_user}:${POSTGRES_PASSWORD:-strix_change_me_in_env}@strix-db:5432/${POSTGRES_DB:-strix}?schema=public"
+      SESSION_SECRET: ${SESSION_SECRET}
+      SCHEDULER_SECRET: ${SCHEDULER_SECRET}
+      PORT: "48080"
+      INSECURE_HTTP: "true"
+    volumes:
+      - strix-runs-data:/tmp/strix_runs
+
+volumes:
+  strix-db-data:
+    name: strix-db-data
+  strix-runs-data:
+    name: strix-runs-data

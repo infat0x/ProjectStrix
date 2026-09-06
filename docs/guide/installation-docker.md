@@ -1,54 +1,85 @@
-# Docker Deployment
+# Containerized Deployment (Podman & Docker)
 
-*(Note: Official Docker support is currently in experimental phases. For production environments, we highly recommend using the `runner/deploy.py` script on a native Linux host as described in the Ubuntu deployment guide.)*
+Project Strix provides first-class support for isolated, rootless container deployment using **Podman** and **Podman Compose** (as well as Docker Compose).
 
-If you prefer containerized environments, you can run Project Strix using Docker Compose. This encapsulates the Next.js frontend, the Python agent runner, and PostgreSQL into isolated containers.
+This encapsulates the Next.js frontend/backend, the embedded background scheduler, the Python Strix AI core, and the PostgreSQL database into secure, containerized environments.
 
-## Prerequisites
-- Docker Engine
-- Docker Compose v2
+---
 
-## Deployment
+## ⚡ 1-Click Automated Deployment (Recommended)
 
-1. Clone the repository:
+We provide an idempotent, self-healing Python orchestrator script that:
+1. Verifies/installs Podman and Compose tools.
+2. Automatically generates cryptographically secure passwords and JWT secrets in `.env.podman`.
+3. Builds the production multi-stage image (including Node.js 20, Python 3, and the Strix CLI).
+4. Synchronizes database schemas and starts the stack on port `48080`.
+
+### Run on Linux / VPS:
+```bash
+python3 runner/deploy_podman.py
+# or: bash runner/deploy_podman.sh
+# or: npm run deploy:podman
+```
+
+### Run on Windows (PowerShell / Command Prompt / WSL2):
+The script automatically detects Windows and seamlessly bridges to WSL2 (or native Podman Desktop):
+```powershell
+# In PowerShell:
+.\runner\deploy_podman.ps1
+
+# Or in Command Prompt:
+runner\deploy_podman.bat
+
+# Or directly in WSL2 (Ubuntu):
+python3 runner/deploy_podman.py
+```
+> [!NOTE]
+> When running inside WSL2, Podman container ports are automatically mapped to your Windows host, meaning you can immediately open `http://localhost:48080` in your Windows browser!
+
+---
+
+## 🛠 Manual Deployment (Podman Compose / Docker Compose)
+
+If you prefer to manage the compose lifecycle manually:
+
+1. **Clone the repository**:
    ```bash
    git clone https://github.com/infat0x/ProjectStrix.git
    cd ProjectStrix
    ```
 
-2. Create a `docker-compose.yml` (Example configuration):
-   ```yaml
-   version: '3.8'
-   services:
-     db:
-       image: postgres:15-alpine
-       environment:
-         POSTGRES_USER: strix_user
-         POSTGRES_PASSWORD: strix_password_123
-         POSTGRES_DB: strix
-       volumes:
-         - strix-db-data:/var/lib/postgresql/data
-       ports:
-         - "5432:5432"
-
-     strix-dashboard:
-       build: 
-         context: .
-         dockerfile: Dockerfile
-       ports:
-         - "48080:80"
-       environment:
-         DATABASE_URL: "postgresql://strix_user:strix_password_123@db:5432/strix?schema=public"
-       depends_on:
-         - db
-
-   volumes:
-     strix-db-data:
-   ```
-
-3. Start the containers:
+2. **Configure environment variables**:
+   Copy the example environment configuration:
    ```bash
-   docker-compose up -d
+   cp .env.podman.example .env.podman
+   ```
+   Edit `.env.podman` with your own secure random secrets for `POSTGRES_PASSWORD`, `SESSION_SECRET`, and `SCHEDULER_SECRET`.
+
+3. **Start the containers**:
+   Using Podman Compose:
+   ```bash
+   podman-compose -f podman-compose.yml --env-file .env.podman up -d --build
+   ```
+   Or using Docker Compose:
+   ```bash
+   docker compose -f podman-compose.yml --env-file .env.podman up -d --build
    ```
 
-4. The dashboard will be accessible at `http://localhost:48080`.
+4. **Access the Dashboard**:
+   The dashboard will be live at:
+   ```
+   http://<your-server-ip>:48080
+   ```
+
+---
+
+## 📋 Useful Management Commands
+
+| Action | Podman Command |
+| :--- | :--- |
+| **View Live Dashboard Logs** | `podman logs -f strix-dashboard` |
+| **View Database Logs** | `podman logs -f strix-postgres` |
+| **List Running Containers** | `podman ps` |
+| **Restart Stack** | `podman-compose -f podman-compose.yml restart` |
+| **Stop Stack** | `podman-compose -f podman-compose.yml down` |
+| **View Persistent Volume Data** | `podman volume ls` |

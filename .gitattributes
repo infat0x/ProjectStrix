@@ -1,0 +1,8 @@
+# Enforce LF endings on all scripts and container files regardless of OS
+* text=auto
+*.sh text eol=lf
+*.py text eol=lf
+*.yml text eol=lf
+*.yaml text eol=lf
+Dockerfile text eol=lf
+entrypoint.sh text eol=lf
