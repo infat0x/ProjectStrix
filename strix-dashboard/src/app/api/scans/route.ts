@@ -620,6 +620,7 @@ export async function POST(req: NextRequest) {
 
   const logStream = fs.createWriteStream(logFile, { flags: "a" });
   let pythonDirSyncInterval: NodeJS.Timeout | null = null;
+  let lastNestedVulnMtime = 0;
 
   // Poll for the nested python vulnerabilities.json and copy it to our UUID vulnerabilities.json
   pythonDirSyncInterval = setInterval(() => {
@@ -631,14 +632,18 @@ export async function POST(req: NextRequest) {
         if (targetDir) {
           const nestedVulnFile = path.join(nestedRunsDir, targetDir.name, "vulnerabilities.json");
           if (fs.existsSync(nestedVulnFile)) {
-             const vulns = fs.readFileSync(nestedVulnFile, "utf-8");
-             // Only write if it's valid JSON and different
-             try {
+            const stat = fs.statSync(nestedVulnFile);
+            if (stat.mtimeMs > lastNestedVulnMtime) {
+              lastNestedVulnMtime = stat.mtimeMs;
+              const vulns = fs.readFileSync(nestedVulnFile, "utf-8");
+              // Only write if it's valid JSON and different
+              try {
                 const parsed = JSON.parse(vulns);
                 if (Array.isArray(parsed) && parsed.length > 0) {
-                   fs.writeFileSync(vulnFile, JSON.stringify(parsed, null, 2));
+                  fs.writeFileSync(vulnFile, JSON.stringify(parsed, null, 2));
                 }
-             } catch {}
+              } catch {}
+            }
           }
         }
       } catch (e) {

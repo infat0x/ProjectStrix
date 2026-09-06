@@ -5,6 +5,8 @@ services:
     image: docker.io/library/postgres:16-alpine
     container_name: strix-postgres
     restart: unless-stopped
+    mem_limit: 256m
+    command: ["postgres", "-c", "shared_buffers=64MB", "-c", "work_mem=4MB", "-c", "maintenance_work_mem=32MB"]
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-strix_user}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-strix_change_me_in_env}
@@ -25,6 +27,7 @@ services:
       dockerfile: podman/Dockerfile
     container_name: strix-dashboard
     restart: unless-stopped
+    mem_limit: 768m
     depends_on:
       - strix-db
     ports:
@@ -35,6 +38,7 @@ services:
       SCHEDULER_SECRET: ${SCHEDULER_SECRET}
       PORT: "48080"
       INSECURE_HTTP: "true"
+      NODE_OPTIONS: "--max-old-space-size=512"
     volumes:
       - strix-runs-data:/tmp/strix_runs
 

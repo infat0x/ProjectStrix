@@ -14,7 +14,22 @@ export async function GET(req: NextRequest) {
   try {
     const vulns = await prisma.vulnerability.findMany({
       where,
-      include: {
+      select: {
+        id: true,
+        vulnId: true,
+        title: true,
+        severity: true,
+        endpoint: true,
+        method: true,
+        description: true,
+        poc: true,
+        poc_description: true,
+        poc_script_code: true,
+        cvss: true,
+        remediation: true,
+        createdAt: true,
+        status: true,
+        scanId: true,
         scan: {
           select: { target: true, id: true }
         }

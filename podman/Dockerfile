@@ -40,7 +40,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 ENV SESSION_SECRET="build_dummy_session_secret_32bytes_long_random_hex"
 ENV SCHEDULER_SECRET="build_dummy_scheduler_secret_32bytes_random"
-RUN npm run build
+RUN npm run build && rm -rf .next/cache
 
 # 7. Create directory for scan runs and logs
 RUN mkdir -p /tmp/strix_runs && chmod 777 /tmp/strix_runs
@@ -66,7 +66,7 @@ done
 
 echo "==> [Strix Podman Container] Database migrations applied successfully."
 echo "==> [Strix Podman Container] Starting Project Strix Dashboard on port ${PORT:-48080}..."
-exec npm run start -- -p "${PORT:-48080}" -H 0.0.0.0
+exec npx next start -p "${PORT:-48080}" -H 0.0.0.0
 EOF
 
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
@@ -74,5 +74,6 @@ RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 EXPOSE 48080
 ENV PORT=48080
 ENV INSECURE_HTTP=true
+ENV NODE_OPTIONS="--max-old-space-size=512"
 
 ENTRYPOINT ["/app/entrypoint.sh"]

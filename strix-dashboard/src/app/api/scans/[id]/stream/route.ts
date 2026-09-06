@@ -109,6 +109,8 @@ export async function GET(
 
       // Watch for new log lines and vulns
       let lastSize = fs.existsSync(logFile) ? fs.statSync(logFile).size : 0;
+      let lastVulnMtime = 0;
+      let lastRunMtime = 0;
       let lastVulnCount = 0;
       let tickCount = 0;
       let lastStatus = "running"; // Track last known status to send updates
@@ -129,7 +131,7 @@ export async function GET(
           );
         }
 
-        // Check for new log lines
+        // Check for new log lines (only when file size grew)
         if (fs.existsSync(logFile)) {
           try {
             const stat = fs.statSync(logFile);
@@ -139,10 +141,6 @@ export async function GET(
               fs.readSync(fd, buf, 0, buf.length, lastSize);
               fs.closeSync(fd);
               const newText = buf.toString("utf-8");
-              log.debug(
-                `SSE /api/scans/${id}/stream`,
-                `New log data: +${stat.size - lastSize} bytes`,
-              );
               lastSize = stat.size;
               try {
                 controller.enqueue(
@@ -167,27 +165,31 @@ export async function GET(
           }
         }
 
-        // Check for new vulnerabilities
+        // Check for new vulnerabilities (only when vulnFile has actually been modified)
         if (fs.existsSync(vulnFile)) {
           try {
-            const vulns = JSON.parse(fs.readFileSync(vulnFile, "utf-8"));
-            if (Array.isArray(vulns) && vulns.length > lastVulnCount) {
-              const newVulns = vulns.slice(lastVulnCount);
-              log.info(
-                `SSE /api/scans/${id}/stream`,
-                `${newVulns.length} new vulnerability(ies) found`,
-                {
-                  titles: newVulns.map((v: any) => `${v.severity}: ${v.title}`),
-                },
-              );
-              for (const v of newVulns) {
-                controller.enqueue(
-                  encoder.encode(
-                    `data: ${JSON.stringify({ type: "vulnerability", vuln: v })}\n\n`,
-                  ),
+            const stat = fs.statSync(vulnFile);
+            if (stat.mtimeMs > lastVulnMtime) {
+              lastVulnMtime = stat.mtimeMs;
+              const vulns = JSON.parse(fs.readFileSync(vulnFile, "utf-8"));
+              if (Array.isArray(vulns) && vulns.length > lastVulnCount) {
+                const newVulns = vulns.slice(lastVulnCount);
+                log.info(
+                  `SSE /api/scans/${id}/stream`,
+                  `${newVulns.length} new vulnerability(ies) found`,
+                  {
+                    titles: newVulns.map((v: any) => `${v.severity}: ${v.title}`),
+                  },
                 );
+                for (const v of newVulns) {
+                  controller.enqueue(
+                    encoder.encode(
+                      `data: ${JSON.stringify({ type: "vulnerability", vuln: v })}\n\n`,
+                    ),
+                  );
+                }
+                lastVulnCount = vulns.length;
               }
-              lastVulnCount = vulns.length;
             }
           } catch (e) {
             log.error(
@@ -198,31 +200,35 @@ export async function GET(
           }
         }
 
-        // Check if scan is done or status changed
+        // Check if scan is done or status changed (only when runFile has been modified)
         if (fs.existsSync(runFile)) {
           try {
-            const run = JSON.parse(fs.readFileSync(runFile, "utf-8"));
-            const activeStatuses = ["running", "crawling", "scanning", "analyzing"];
-            
-            // Send intermediate status changes
-            if (run.status && run.status !== lastStatus) {
-              lastStatus = run.status;
-              controller.enqueue(
-                encoder.encode(
-                  `data: ${JSON.stringify({ type: "status", status: run.status })}\n\n`,
-                ),
-              );
-            }
+            const stat = fs.statSync(runFile);
+            if (stat.mtimeMs > lastRunMtime) {
+              lastRunMtime = stat.mtimeMs;
+              const run = JSON.parse(fs.readFileSync(runFile, "utf-8"));
+              const activeStatuses = ["running", "crawling", "scanning", "analyzing"];
+              
+              // Send intermediate status changes
+              if (run.status && run.status !== lastStatus) {
+                lastStatus = run.status;
+                controller.enqueue(
+                  encoder.encode(
+                    `data: ${JSON.stringify({ type: "status", status: run.status })}\n\n`,
+                  ),
+                );
+              }
 
-            // End stream if finished
-            if (!activeStatuses.includes(run.status)) {
-              log.info(
-                `SSE /api/scans/${id}/stream`,
-                `Scan finished (status=${run.status}), closing SSE stream`,
-                { exitCode: run.exitCode },
-              );
-              clearInterval(watchInterval);
-              controller.close();
+              // End stream if finished
+              if (!activeStatuses.includes(run.status)) {
+                log.info(
+                  `SSE /api/scans/${id}/stream`,
+                  `Scan finished (status=${run.status}), closing SSE stream`,
+                  { exitCode: run.exitCode },
+                );
+                clearInterval(watchInterval);
+                controller.close();
+              }
             }
           } catch (e) {
             log.error(

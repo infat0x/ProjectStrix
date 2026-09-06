@@ -10,16 +10,25 @@ export async function GET(req: NextRequest) {
     const userId = session.userId as string;
     const isAdmin = session.role === "ADMIN";
 
+    const scanWhere = isAdmin ? {} : { userId };
+
     // Get scans: ADMIN sees all platform scans, regular user sees their own
     const scans = await prisma.scan.findMany({
-      where: isAdmin ? {} : { userId },
+      where: scanWhere,
       select: { id: true, status: true, startedAt: true }
     });
 
     const scanIds = scans.map(s => s.id);
 
-    // Get vulnerabilities for these scans
-    const vulnerabilities = await prisma.vulnerability.findMany({
+    // 1. Group by severity at database level (Zero in-memory array allocation)
+    const severityGroups = scanIds.length > 0 ? await prisma.vulnerability.groupBy({
+      by: ['severity'],
+      where: { scanId: { in: scanIds } },
+      _count: { _all: true }
+    }) : [];
+
+    // 2. Fetch only the 8 most recent vulnerabilities (instead of entire table)
+    const recentVulns = scanIds.length > 0 ? await prisma.vulnerability.findMany({
       where: { scanId: { in: scanIds } },
       select: {
         id: true,
@@ -30,24 +39,32 @@ export async function GET(req: NextRequest) {
         status: true,
         endpoint: true,
       },
-      orderBy: { createdAt: 'desc' }
-    });
+      orderBy: { createdAt: 'desc' },
+      take: 8
+    }) : [];
 
-    // 1. Calculate Summary Metrics
+    // 3. Calculate Summary Metrics
     const totalScans = scans.length;
     const activeScans = scans.filter(s => ["running", "scanning", "analyzing", "crawling"].includes(s.status)).length;
-    const totalVulns = vulnerabilities.length;
-    const criticalVulns = vulnerabilities.filter(v => v.severity.toLowerCase() === "critical").length;
-
-    // 2. Vulnerability by Severity Breakdown
+    
     const severityCount = { critical: 0, high: 0, medium: 0, low: 0, informative: 0 };
-    vulnerabilities.forEach(v => {
-      const s = v.severity.toLowerCase();
-      if (s in severityCount) severityCount[s as keyof typeof severityCount]++;
-      else severityCount.informative++;
-    });
+    let totalVulns = 0;
+    let criticalVulns = 0;
 
-    // 3. Scan Trend over last 7 days
+    for (const group of severityGroups) {
+      const s = group.severity.toLowerCase();
+      const count = group._count._all;
+      totalVulns += count;
+      if (s === "critical") criticalVulns += count;
+
+      if (s in severityCount) {
+        severityCount[s as keyof typeof severityCount] += count;
+      } else {
+        severityCount.informative += count;
+      }
+    }
+
+    // 4. Scan Trend over last 7 days
     const trend: Record<string, number> = {};
     for (let i = 6; i >= 0; i--) {
       const d = new Date();
@@ -76,7 +93,7 @@ export async function GET(req: NextRequest) {
         { name: "Informative", value: severityCount.informative, fill: "var(--sev-informative)" }
       ].filter(s => s.value > 0),
       trendData,
-      recentVulns: vulnerabilities.slice(0, 8)
+      recentVulns
     });
 
   } catch (error) {
