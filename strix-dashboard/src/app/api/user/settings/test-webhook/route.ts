@@ -26,9 +26,9 @@ export async function POST(req: NextRequest) {
             fields: [
               { name: "⚡ Status", value: "Verified & Connected", inline: true },
               { name: "👤 Initiated By", value: session.username || "Operator", inline: true },
-              { name: "🛡️ Environment", value: "Strix Defense Console", inline: true }
+              { name: "⚔️ Platform", value: "Strix Pentest Console", inline: true }
             ],
-            footer: { text: "Project Strix Autonomous Security Orchestrator" },
+            footer: { text: "Project Strix Autonomous Pentest Orchestrator" },
             timestamp: new Date().toISOString()
           }
         ]

@@ -40,7 +40,7 @@ import {
 const TABS = [
   { id: "api",           label: "LLM & Inference",     icon: Key,       desc: "Cloud providers & local LLM studio" },
   { id: "agent",         label: "Agent Behavior",       icon: Bot,       desc: "Heuristics, turn budgets & headers" },
-  { id: "scope",         label: "Scope & Governance",   icon: Network,   desc: "Target boundaries & egress proxy" },
+  { id: "scope",         label: "Scope & Boundaries",   icon: Network,   desc: "Target boundaries & upstream proxy" },
   { id: "notifications", label: "Alerts & Webhooks",    icon: BellRing,  desc: "Slack, Discord & Telegram feeds" },
   { id: "security",      label: "Account & Password",   icon: Lock,      desc: "Credentials, sessions & encryption" },
   { id: "preferences",   label: "Data & Preferences",   icon: Settings2, desc: "Default scan modes & backups" },
@@ -491,13 +491,13 @@ export default function Settings() {
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
             <span className="tag" style={{ background: "var(--bg-2)", border: "1px solid var(--border-md)", color: "var(--fg-2)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
-              Platform Governance
+              Pentest Orchestrator
             </span>
             <span style={{ fontSize: 12, color: "var(--fg-3)" }}>AES-256-GCM Keystore · Zero-Trust Encryption</span>
           </div>
-          <h1 className="page-heading">Platform Settings & Orchestration</h1>
+          <h1 className="page-heading">Pentest Engine & Settings</h1>
           <p className="page-desc">
-            Configure inference engines, heuristic autonomous agent thresholds, network perimeter boundaries, and SIEM alert webhooks.
+            Configure reasoning engines, autonomous pentesting agent heuristics, target scope boundaries, and exploit notification webhooks.
           </p>
         </div>
 
@@ -1092,10 +1092,10 @@ export default function Settings() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
                 <div>
                   <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
-                    Scope Boundaries & Network Governance
+                    Target Scope & Rules of Engagement
                   </h2>
                   <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "4px 0 0" }}>
-                    Strict perimeter rules preventing autonomous agents from touching out-of-scope or sensitive infrastructure.
+                    Strict engagement boundaries preventing autonomous agents from touching out-of-scope assets or unauthorized hosts.
                   </p>
                 </div>
                 <button className="btn-primary" onClick={() => handleSave("scope")}>
@@ -1184,10 +1184,10 @@ export default function Settings() {
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 12 }}>
                 <div>
                   <h2 style={{ fontSize: 14, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px", margin: 0 }}>
-                    Security Feeds, SIEM & Webhook Alerts
+                    Exploit Alerts & Webhook Notifications
                   </h2>
                   <p style={{ fontSize: 12, color: "var(--fg-3)", margin: "4px 0 0" }}>
-                    Deliver instant notifications to your incident response channels on Slack, Discord, and Telegram.
+                    Deliver real-time alerts to Slack, Discord, and Telegram when vulnerabilities and verified exploits are discovered.
                   </p>
                 </div>
                 <button className="btn-primary" onClick={() => handleSave("notifications")}>
@@ -1385,7 +1385,7 @@ export default function Settings() {
                 <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: 14 }}>
                   <span style={{ fontSize: 11, color: "var(--fg-3)", textTransform: "uppercase", fontWeight: 600 }}>RBAC Role</span>
                   <div style={{ fontSize: 16, fontWeight: 700, color: "var(--fg)", marginTop: 4 }}>{userProfile.role || "ADMIN"}</div>
-                  <span style={{ fontSize: 11, color: "var(--sev-low)" }}>Full Platform Governance</span>
+                  <span style={{ fontSize: 11, color: "var(--sev-low)" }}>Full Administrative Access</span>
                 </div>
 
                 <div style={{ background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r)", padding: 14 }}>

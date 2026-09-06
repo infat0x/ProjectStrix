@@ -151,16 +151,16 @@ function LiveThreatTicker({ scans, activeCount }: { scans: Scan[]; activeCount: 
             animation: activeCount > 0 ? "pulse 1.5s infinite" : "none"
           }} />
           <span style={{ color: "var(--fg)", fontWeight: 700, letterSpacing: "0.5px" }}>
-            STRIX DEFENSE ORCHESTRATOR
+            STRIX OFFENSIVE PENTEST ORCHESTRATOR
           </span>
         </div>
         <span style={{ color: "var(--fg-3)" }}>|</span>
         <span style={{ color: activeCount > 0 ? "var(--sev-critical)" : "var(--fg-2)", fontWeight: 600 }}>
-          {activeCount > 0 ? `[ACTIVE SCAN] ${activeCount} Agent(s) Operating` : "[STANDBY] Daemon Ready"}
+          {activeCount > 0 ? `[ENGAGEMENT ACTIVE] ${activeCount} Pentest Agent(s) Operating` : "[STANDBY] Agent Daemon Ready"}
         </span>
         <span style={{ color: "var(--fg-3)" }}>|</span>
         <span style={{ color: "var(--fg-3)" }}>
-          Latest Target: <span style={{ color: "var(--fg)" }}>{latestTarget}</span>
+          Engagement Target: <span style={{ color: "var(--fg)" }}>{latestTarget}</span>
         </span>
       </div>
 
@@ -293,11 +293,11 @@ export default function Dashboard() {
 
       {/* Stats Grid - Symmetrical & Balanced */}
       <div className="stats-grid" style={{ marginBottom: 20 }}>
-        {/* Card 1: Score with Gauge */}
+        {/* Card 1: Target Resilience Score */}
         <div className="stat-card" style={{ display: "flex", flexDirection: "row", alignItems: "center", justifyContent: "space-between", minHeight: 130 }}>
           <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
             <div className="stat-label">
-              <span className="stat-label-text">Security Score</span>
+              <span className="stat-label-text">Target Resilience</span>
               <Shield size={14} className="stat-label-icon" />
             </div>
             <div className={`stat-value${score >= 70 ? " success" : score >= 40 ? " warning" : " danger"}`} style={{ fontSize: 28, lineHeight: 1 }}>
@@ -305,50 +305,52 @@ export default function Dashboard() {
               <span style={{ fontSize: 13, fontWeight: 400, opacity: 0.5 }}>/100</span>
             </div>
             <div className="stat-sub">
-              {score >= 70 ? "Optimal posture" : score >= 40 ? "Elevated risk" : "Critical risk"}
+              {score >= 70 ? "Hardened perimeter" : score >= 40 ? "Partial exploitability" : "Severe compromise"}
             </div>
           </div>
           <SecurityScoreGauge score={score} />
         </div>
 
-        {/* Card 2: Critical Vulns */}
+        {/* Card 2: Critical Findings */}
         <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 130 }}>
           <div className="stat-label">
-            <span className="stat-label-text">Critical Threats</span>
+            <span className="stat-label-text">Critical Exploits</span>
             <AlertTriangle size={14} className="stat-label-icon" />
           </div>
           <div className={`stat-value${criticalVulns > 0 ? " danger" : ""}`} style={{ fontSize: 28, lineHeight: 1 }}>
             {criticalVulns}
           </div>
           <div className="stat-sub">
-            {criticalVulns > 0 ? "Immediate action required" : "No critical threats"}
+            {criticalVulns > 0 ? "High-impact verified findings" : "No critical exploits found"}
           </div>
         </div>
 
-        {/* Card 3: Active Scans */}
+        {/* Card 3: Active Pentests */}
         <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 130 }}>
           <div className="stat-label">
-            <span className="stat-label-text">Active Scans</span>
+            <span className="stat-label-text">Active Pentests</span>
             <Activity size={14} className="stat-label-icon" />
           </div>
           <div className="stat-value" style={{ fontSize: 28, lineHeight: 1 }}>
             {activeScans}
           </div>
           <div className="stat-sub">
-            {activeScans > 0 ? "Agents currently analyzing" : "All agents idle"}
+            {activeScans > 0 ? "Agents probing attack surface" : "All agents on standby"}
           </div>
         </div>
 
         {/* Card 4: Total Findings */}
         <div className="stat-card" style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", minHeight: 130 }}>
           <div className="stat-label">
-            <span className="stat-label-text">Total Findings</span>
+            <span className="stat-label-text">Confirmed Findings</span>
             <Target size={14} className="stat-label-icon" />
           </div>
           <div className="stat-value" style={{ fontSize: 28, lineHeight: 1 }}>
             {totalVulns}
           </div>
-          <div className="stat-sub">Across {scans.length} historical scans</div>
+          <div className="stat-sub">
+            {totalVulns > 0 ? "Verified security vulnerabilities" : "No vulnerabilities discovered"}
+          </div>
         </div>
       </div>
 

@@ -296,9 +296,9 @@ export default function CompliancePage() {
             </span>
             <span style={{ fontSize: 12, color: "var(--fg-3)" }}>OWASP Top 10 (2021) Benchmark</span>
           </div>
-          <h1 className="page-heading">Compliance & Regulatory Matrix</h1>
+          <h1 className="page-heading">OWASP Top 10 Benchmark Matrix</h1>
           <p className="page-desc">
-            Continuous automated benchmark of discovered application flaws against OWASP 2021, NIST SP 800-53, and PCI-DSS requirements.
+            Automated benchmark of discovered web application flaws mapped against OWASP 2021, NIST SP 800-53, and CWE exploit categories.
           </p>
         </div>
 
@@ -319,7 +319,7 @@ export default function CompliancePage() {
                 outline: "none"
               }}
             >
-              <option value="all">Enterprise Wide (All Targets)</option>
+              <option value="all">All Targets (Global Scope)</option>
               {targets.map(t => (
                 <option key={t} value={t}>{t}</option>
               ))}
@@ -332,7 +332,7 @@ export default function CompliancePage() {
             style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 12.5 }}
           >
             {copiedAudit ? <Check size={14} /> : <FileDown size={14} />}
-            {copiedAudit ? "Exported JSON!" : "Export Audit Report"}
+            {copiedAudit ? "Exported JSON!" : "Export Matrix Report"}
           </button>
         </div>
       </div>
@@ -342,7 +342,7 @@ export default function CompliancePage() {
         {/* Compliance Score */}
         <div className="stat-card">
           <div className="stat-label">
-            <span className="stat-label-text">Compliance Health</span>
+            <span className="stat-label-text">OWASP Posture</span>
             <Award size={14} className="stat-label-icon" />
           </div>
           <div className={`stat-value ${complianceScore.score >= 75 ? "success" : complianceScore.score >= 50 ? "warning" : "danger"}`}>
@@ -357,7 +357,7 @@ export default function CompliancePage() {
         {/* Clean Categories */}
         <div className="stat-card">
           <div className="stat-label">
-            <span className="stat-label-text">Compliant Controls</span>
+            <span className="stat-label-text">Unexploited Categories</span>
             <CheckCircle2 size={14} className="stat-label-icon" style={{ color: "var(--sev-low)" }} />
           </div>
           <div className="stat-value">
@@ -365,35 +365,35 @@ export default function CompliancePage() {
             <span style={{ fontSize: 14, opacity: 0.5 }}>/ 10</span>
           </div>
           <div className="stat-sub">
-            {10 - complianceScore.cleanCategories} categories with active violations
+            {10 - complianceScore.cleanCategories} categories with confirmed findings
           </div>
         </div>
 
         {/* Active Violations */}
         <div className="stat-card">
           <div className="stat-label">
-            <span className="stat-label-text">Active Violations</span>
+            <span className="stat-label-text">Confirmed Flaws</span>
             <ShieldAlert size={14} className="stat-label-icon" style={{ color: "var(--sev-critical)" }} />
           </div>
           <div className={`stat-value ${filteredVulns.length > 0 ? "danger" : ""}`}>
             {filteredVulns.length}
           </div>
           <div className="stat-sub">
-            Excluding resolved and false positives
+            Discovered vulnerabilities across targets
           </div>
         </div>
 
         {/* Critical Gaps */}
         <div className="stat-card">
           <div className="stat-label">
-            <span className="stat-label-text">High / Critical Gaps</span>
+            <span className="stat-label-text">High / Critical Exploits</span>
             <AlertTriangle size={14} className="stat-label-icon" style={{ color: "var(--sev-high)" }} />
           </div>
           <div className={`stat-value ${filteredVulns.filter(v => v.severity === "critical" || v.severity === "high").length > 0 ? "danger" : ""}`}>
             {filteredVulns.filter(v => v.severity === "critical" || v.severity === "high").length}
           </div>
           <div className="stat-sub">
-            Immediate audit showstoppers
+            Immediate high-impact attack vectors
           </div>
         </div>
       </div>

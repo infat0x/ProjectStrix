@@ -40,7 +40,7 @@ const navItems = [
   { name: "Scans",            path: "/scans",           icon: Radar },
   { name: "Vulnerabilities",  path: "/vulnerabilities", icon: ShieldAlert },
   { name: "Asset Inventory",  path: "/assets",          icon: Globe },
-  { name: "Compliance",       path: "/compliance",      icon: ShieldCheck },
+  { name: "OWASP Matrix",     path: "/compliance",      icon: ShieldCheck },
   { name: "Hacker Tools",     path: "/tools",           icon: Wrench },
   { name: "Live Graph",       path: "/graph",           icon: Activity },
   { name: "Reports",          path: "/reports",         icon: FileText },
