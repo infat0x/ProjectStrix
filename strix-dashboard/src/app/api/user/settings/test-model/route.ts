@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getSession } from "@/lib/session";
+import { prisma } from "@/lib/prisma";
+import { readApiKeys } from "@/lib/apiKeys";
 
 export async function POST(req: NextRequest) {
   const session = await getSession();
@@ -65,7 +67,12 @@ export async function POST(req: NextRequest) {
 
     // Default OpenAI
     if (model.startsWith("openai/")) {
-      const openAiKey = keys?.openai;
+      let openAiKey = typeof keys?.openai === "string" ? keys.openai.trim() : "";
+      if (!openAiKey || openAiKey === "true") {
+        const user = await prisma.user.findUnique({ where: { id: session.userId as string } });
+        const storedKeys = readApiKeys(user?.apiKeys);
+        openAiKey = storedKeys.openai || "";
+      }
       if (!openAiKey) {
         return NextResponse.json({ error: "OpenAI API Key is required." }, { status: 400 });
       }

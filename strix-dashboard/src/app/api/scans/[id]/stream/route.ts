@@ -85,12 +85,25 @@ export async function GET(
           );
         }
       } else {
-        // Fallback for scans stuck in scheduled / DB only state
-        // To not hold a zombie stream, we enqueue a "scheduled" status
+        const activeStatuses = ["running", "crawling", "scanning", "analyzing"];
+        // If DB scan is already completed/failed/stopped/scheduled, send status and close immediately
+        if (!activeStatuses.includes(dbScan.status)) {
+          log.info(
+            `SSE /api/scans/${id}/stream`,
+            `No run.json and DB scan is finished or scheduled (status=${dbScan.status}), closing SSE`,
+          );
+          controller.enqueue(
+            encoder.encode(
+              `data: ${JSON.stringify({ type: "status", status: dbScan.status })}\n\n`,
+            ),
+          );
+          controller.close();
+          return;
+        }
         controller.enqueue(
           encoder.encode(
-            `data: ${JSON.stringify({ type: "status", status: "scheduled" })}\n\n`,
-          )
+            `data: ${JSON.stringify({ type: "status", status: dbScan.status })}\n\n`,
+          ),
         );
       }
 

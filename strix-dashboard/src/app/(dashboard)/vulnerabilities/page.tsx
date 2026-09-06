@@ -7,6 +7,7 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 
 interface Vulnerability {
   id: string;
+  vulnId?: string;
   title: string;
   severity: "critical" | "high" | "medium" | "low" | "informative" | "info";
   endpoint: string;
@@ -85,9 +86,9 @@ export default function VulnerabilitiesPage() {
     confirm(`Are you sure you want to permanently delete ${selectedIds.size} selected vulnerability(s)?`, async () => {
       setDeletingBulk(true);
       try {
-        const items = Array.from(selectedIds).map(id => {
-          const [scanId, vulnId] = id.split("::");
-          return { scanId, vulnId };
+        const items = Array.from(selectedIds).map(uniqueKey => {
+          const [scanId, vulnId] = uniqueKey.split("::");
+          return { scanId, vulnId, id: vulnId };
         });
 
         await fetch("/api/vulnerabilities/bulk", {

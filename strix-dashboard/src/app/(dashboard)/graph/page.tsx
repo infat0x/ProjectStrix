@@ -48,7 +48,7 @@ export default function AnalyticsDashboard() {
     badge: (sev: string) => ({
       display: "inline-block", padding: "4px 8px", borderRadius: "var(--r)", fontSize: 11, fontWeight: 600, textTransform: "uppercase",
       background: sev === "critical" ? "rgba(239, 68, 68, 0.15)" : sev === "high" ? "rgba(249, 115, 22, 0.15)" : sev === "medium" ? "rgba(234, 179, 8, 0.15)" : "rgba(34, 197, 94, 0.15)",
-      color: sev === "critical" ? "var(--sev-critical)" : sev === "high" ? "var(--sev-high)" : sev === "medium" ? "var(--sev-med)" : "var(--sev-low)",
+      color: sev === "critical" ? "var(--sev-critical)" : sev === "high" ? "var(--sev-high)" : sev === "medium" ? "var(--sev-medium)" : "var(--sev-low)",
       border: `1px solid ${sev === "critical" ? "rgba(239, 68, 68, 0.3)" : sev === "high" ? "rgba(249, 115, 22, 0.3)" : sev === "medium" ? "rgba(234, 179, 8, 0.3)" : "rgba(34, 197, 94, 0.3)"}`
     }),
     table: { width: "100%", borderCollapse: "collapse", fontSize: 13 },

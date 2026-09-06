@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { Plus, Trash2, Search, FileText, Loader2, Check, AlertCircle, Edit3, Eye, Copy } from "lucide-react";
 import { useDialog } from "@/components/DialogProvider";
 import { MarkdownRenderer } from "@/components/MarkdownRenderer";
@@ -26,6 +26,7 @@ export default function InstructionsPage() {
   // Auto-save state
   const [lastSaved, setLastSaved] = useState({ title: "", content: "" });
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved" | "error">("idle");
+  const isSavingRef = useRef(false);
   
   // Editor mode
   const [previewMode, setPreviewMode] = useState(false);
@@ -87,6 +88,8 @@ export default function InstructionsPage() {
 
     setSaveStatus("saving");
     const timeout = setTimeout(async () => {
+      if (isSavingRef.current) return;
+      isSavingRef.current = true;
       try {
         const isNew = selectedId === "new";
         const url = isNew ? "/api/instructions" : `/api/instructions/${selectedId}`;
@@ -103,18 +106,19 @@ export default function InstructionsPage() {
         setLastSaved({ title: savedInst.title, content: savedInst.content });
         setSaveStatus("saved");
         
-        // Silent update to list
-        fetch("/api/instructions")
-          .then(r => r.json())
-          .then(data => {
-            if (Array.isArray(data)) {
-              setInstructions(data);
-              if (isNew) setSelectedId(savedInst.id);
-            }
-          });
-          
+        if (isNew) {
+          setSelectedId(savedInst.id);
+        }
+        setInstructions(prev => {
+          if (isNew) {
+            return [savedInst, ...prev.filter(i => i.id !== savedInst.id)];
+          }
+          return prev.map(item => item.id === savedInst.id ? savedInst : item);
+        });
       } catch (e) {
         setSaveStatus("error");
+      } finally {
+        isSavingRef.current = false;
       }
     }, 800); // 800ms debounce
 

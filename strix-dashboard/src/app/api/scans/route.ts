@@ -307,6 +307,34 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "target or targetList is required" }, { status: 400 });
   }
 
+  // SSRF Protection: Ensure target URLs do not point to internal, loopback, or cloud metadata addresses
+  if (process.env.ALLOW_INTERNAL_SCANS !== "true" && !body.simulationMode) {
+    if (target && (target.startsWith("http://") || target.startsWith("https://"))) {
+      const isSafe = await isSafePublicUrl(target);
+      if (!isSafe) {
+        log.warn("POST /api/scans", `SSRF attempt blocked for target: ${target}`);
+        return NextResponse.json({
+          error: "Target URL resolves to a private, loopback, or reserved IP address. Internal scans are blocked."
+        }, { status: 400 });
+      }
+    }
+
+    if (targetList) {
+      const targets = targetList.split("\n").map((t: string) => t.trim()).filter((t: string) => t.length > 0);
+      for (const t of targets) {
+        if (t.startsWith("http://") || t.startsWith("https://")) {
+          const isSafe = await isSafePublicUrl(t);
+          if (!isSafe) {
+            log.warn("POST /api/scans", `SSRF attempt blocked in targetList for: ${t}`);
+            return NextResponse.json({
+              error: `Target '${t}' resolves to a private, loopback, or reserved IP address. Internal scans are blocked.`
+            }, { status: 400 });
+          }
+        }
+      }
+    }
+  }
+
   // M-4: Input length limits
   if (instruction && instruction.length > 25000) {
     return NextResponse.json({ error: "Instruction too long (max 25000 chars)" }, { status: 400 });

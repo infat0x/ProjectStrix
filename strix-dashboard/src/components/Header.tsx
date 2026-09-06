@@ -64,6 +64,7 @@ export default function Header() {
       const res = await fetch("/api/scans");
       if (!res.ok) return;
       const data = await res.json();
+      const scanList = Array.isArray(data?.scans) ? data.scans : (Array.isArray(data) ? data : []);
       
       const notifiedStr = localStorage.getItem("strix_notified_scans") || "[]";
       let notifiedIds: string[] = [];
@@ -72,7 +73,7 @@ export default function Header() {
       let newNotifs: InAppNotif[] = [];
       let updatedNotifiedIds = [...notifiedIds];
 
-      for (const scan of data) {
+      for (const scan of scanList) {
         if ((scan.status === "completed" || scan.status === "failed") && !notifiedIds.includes(scan.id)) {
           const type = scan.status === "completed" ? "success" : "error";
           const title = scan.status === "completed" ? "Scan Completed" : "Scan Failed";

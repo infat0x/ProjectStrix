@@ -8,10 +8,11 @@ export async function GET(req: NextRequest) {
 
   try {
     const userId = session.userId as string;
+    const isAdmin = session.role === "ADMIN";
 
-    // Get all user scans
+    // Get scans: ADMIN sees all platform scans, regular user sees their own
     const scans = await prisma.scan.findMany({
-      where: { userId },
+      where: isAdmin ? {} : { userId },
       select: { id: true, status: true, startedAt: true }
     });
 

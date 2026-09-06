@@ -92,8 +92,8 @@ export default function Dashboard() {
           } catch {}
         }
         vulns.sort((a, b) => {
-          const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, informative: 4 };
-          return order[a.severity] - order[b.severity];
+          const order: Record<string, number> = { critical: 0, high: 1, medium: 2, low: 3, informative: 4, info: 4 };
+          return (order[a.severity] ?? 99) - (order[b.severity] ?? 99);
         });
         setRecentVulns(vulns.slice(0, 6));
       }

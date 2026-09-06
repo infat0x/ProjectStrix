@@ -45,7 +45,8 @@ export async function DELETE(req: NextRequest) {
           const vulns = JSON.parse(fs.readFileSync(vulnFile, "utf-8"));
           const originalLength = vulns.length;
           
-          const newVulns = vulns.filter((v: any) => !vulnIds.includes(v.id));
+          // Match both v.id and v.vulnId
+          const newVulns = vulns.filter((v: any) => !vulnIds.includes(v.id) && (!v.vulnId || !vulnIds.includes(v.vulnId)));
           
           if (newVulns.length !== originalLength) {
             fs.writeFileSync(vulnFile, JSON.stringify(newVulns, null, 2));
@@ -65,11 +66,14 @@ export async function DELETE(req: NextRequest) {
         }
       }
 
-      // Delete from Prisma DB
+      // Delete from Prisma DB by matching either Prisma primary key id OR engine vulnId
       const dbDeleteResult = await prisma.vulnerability.deleteMany({
         where: {
           scanId,
-          vulnId: { in: vulnIds }
+          OR: [
+            { id: { in: vulnIds } },
+            { vulnId: { in: vulnIds } }
+          ]
         }
       });
 
