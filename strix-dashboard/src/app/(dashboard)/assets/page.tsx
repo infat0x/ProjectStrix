@@ -293,8 +293,8 @@ export default function AssetsPage() {
       <div className="page-intro" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span style={{ padding: "2px 8px", background: "rgba(14, 165, 233, 0.15)", border: "1px solid rgba(14, 165, 233, 0.3)", borderRadius: "var(--r-sm)", color: "var(--sev-low)", fontSize: 11, fontWeight: 700, letterSpacing: "0.5px" }}>
-              ATTACK SURFACE MANAGEMENT
+            <span className="tag" style={{ background: "var(--bg-2)", border: "1px solid var(--border-md)", color: "var(--fg-2)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Attack Surface
             </span>
             <span style={{ fontSize: 12, color: "var(--fg-3)" }}>Perimeter Asset Registry</span>
           </div>

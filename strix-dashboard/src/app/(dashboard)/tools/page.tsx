@@ -390,10 +390,10 @@ export default function ToolsPage() {
       <div className="page-intro" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14, marginBottom: 16 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span style={{ padding: "2px 8px", background: "rgba(225, 29, 72, 0.15)", border: "1px solid rgba(225, 29, 72, 0.3)", borderRadius: "var(--r-sm)", color: "var(--sev-critical)", fontSize: 11, fontWeight: 700, letterSpacing: "0.5px" }}>
-              OFFENSIVE TOOLKIT
+            <span className="tag" style={{ background: "var(--bg-2)", border: "1px solid var(--border-md)", color: "var(--fg-2)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Utilities
             </span>
-            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>Red Team Payloads & Cryptographic Utilities</span>
+            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>Payloads & Cryptographic Analysis</span>
           </div>
           <h1 className="page-heading">Hacker Toolkit & Payload Playground</h1>
           <p className="page-desc">
@@ -560,18 +560,18 @@ export default function ToolsPage() {
 
             {/* 1-Click Exploit Vector Studio */}
             <div style={{ display: "flex", flexDirection: "column", gap: 10, padding: 14, background: "var(--bg-2)", border: "1px solid var(--border)", borderRadius: "var(--r)" }}>
-              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 700, color: "var(--sev-critical)", textTransform: "uppercase" }}>
-                <Zap size={14} /> 1-Click Exploit & Bypass Vectors
+              <div style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 11.5, fontWeight: 600, color: "var(--fg-2)", textTransform: "uppercase", letterSpacing: "0.3px" }}>
+                <Zap size={13} style={{ color: "var(--sev-high)" }} /> 1-Click Exploit & Bypass Vectors
               </div>
 
               <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8 }}>
                 <button
                   onClick={generateNoneAlgToken}
-                  className="btn-primary"
-                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, padding: "8px 10px", background: "var(--sev-critical)", color: "#fff", border: "1px solid var(--sev-critical-bd)" }}
+                  className="btn-secondary"
+                  style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, padding: "8px 10px" }}
                   title="Changes header to alg: none and strips cryptographic signature"
                 >
-                  <Unlock size={13} /> Bypass: Set alg: &quot;none&quot;
+                  <Unlock size={13} style={{ color: "var(--sev-critical)" }} /> Bypass: Set alg: &quot;none&quot;
                 </button>
 
                 <button
@@ -580,7 +580,7 @@ export default function ToolsPage() {
                   style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: 6, fontSize: 11.5, padding: "8px 10px" }}
                   title="Injects admin: true and role: admin into claims"
                 >
-                  <ShieldAlert size={13} /> Escalate: admin=true
+                  <ShieldAlert size={13} style={{ color: "var(--sev-high)" }} /> Escalate: admin=true
                 </button>
               </div>
 
@@ -599,7 +599,7 @@ export default function ToolsPage() {
             {/* Forged Exploit Output */}
             <div style={{ display: "flex", flexDirection: "column", gap: 8, marginTop: "auto" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <span style={{ fontSize: 11, fontWeight: 700, color: exploitedJwt ? "var(--sev-low)" : "var(--fg-3)", textTransform: "uppercase" }}>
+                <span style={{ fontSize: 11, fontWeight: 600, color: exploitedJwt ? "var(--sev-low)" : "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.3px" }}>
                   Forged Token Output {exploitedJwt && "(Ready to replay)"}
                 </span>
                 {exploitedJwt && (
@@ -616,11 +616,11 @@ export default function ToolsPage() {
               <div style={{
                 padding: "10px 12px",
                 background: "rgba(0,0,0,0.3)",
-                border: `1px solid ${exploitedJwt ? "var(--sev-low-bd)" : "var(--border)"}`,
+                border: `1px solid ${exploitedJwt ? "var(--border-hi)" : "var(--border)"}`,
                 borderRadius: "var(--r-sm)",
                 fontFamily: "var(--font-mono)",
                 fontSize: 11.5,
-                color: exploitedJwt ? "var(--sev-low)" : "var(--fg-3)",
+                color: exploitedJwt ? "var(--fg)" : "var(--fg-3)",
                 wordBreak: "break-all",
                 minHeight: 48,
                 display: "flex",
@@ -637,8 +637,8 @@ export default function ToolsPage() {
             <div>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#ef4444" }} />
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--sev-critical)" }} />
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                     Header (Algorithm & Token Type)
                   </span>
                 </div>
@@ -661,7 +661,7 @@ export default function ToolsPage() {
                   background: "var(--bg-1)",
                   border: "1px solid var(--border)",
                   borderRadius: "var(--r-sm)",
-                  color: "#ef4444",
+                  color: "var(--fg)",
                   fontSize: 12,
                   fontFamily: "var(--font-mono)",
                   resize: "none"
@@ -674,8 +674,8 @@ export default function ToolsPage() {
             <div style={{ flex: 1, display: "flex", flexDirection: "column" }}>
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
                 <div style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#a855f7" }} />
-                  <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                  <span style={{ width: 6, height: 6, borderRadius: "50%", background: "#bc8cff" }} />
+                  <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                     Payload (Claims & User Data - Live Editable)
                   </span>
                 </div>
@@ -699,7 +699,7 @@ export default function ToolsPage() {
                   background: "var(--bg-1)",
                   border: "1px solid var(--border)",
                   borderRadius: "var(--r-sm)",
-                  color: "#a855f7",
+                  color: "var(--fg)",
                   fontSize: 12,
                   fontFamily: "var(--font-mono)",
                   resize: "none"
@@ -711,8 +711,8 @@ export default function ToolsPage() {
             {/* Signature Segment */}
             <div>
               <div style={{ display: "flex", alignItems: "center", gap: 6, marginBottom: 6 }}>
-                <span style={{ width: 8, height: 8, borderRadius: "50%", background: "#3b82f6" }} />
-                <span style={{ fontSize: 11.5, fontWeight: 700, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
+                <span style={{ width: 6, height: 6, borderRadius: "50%", background: "var(--sev-informative)" }} />
+                <span style={{ fontSize: 11.5, fontWeight: 600, color: "var(--fg)", textTransform: "uppercase", letterSpacing: "0.5px" }}>
                   Signature (Verification)
                 </span>
               </div>
@@ -721,7 +721,7 @@ export default function ToolsPage() {
                 background: "var(--bg-1)",
                 border: "1px solid var(--border)",
                 borderRadius: "var(--r-sm)",
-                color: jwtSignature ? "#3b82f6" : "var(--fg-3)",
+                color: jwtSignature ? "var(--fg-2)" : "var(--fg-3)",
                 fontSize: 11,
                 fontFamily: "var(--font-mono)",
                 wordBreak: "break-all"

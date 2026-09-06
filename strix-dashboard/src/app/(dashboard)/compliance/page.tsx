@@ -291,10 +291,10 @@ export default function CompliancePage() {
       <div className="page-intro" style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: 14 }}>
         <div>
           <div style={{ display: "flex", alignItems: "center", gap: 8, marginBottom: 4 }}>
-            <span style={{ padding: "2px 8px", background: "rgba(225, 29, 72, 0.15)", border: "1px solid rgba(225, 29, 72, 0.3)", borderRadius: "var(--r-sm)", color: "var(--sev-critical)", fontSize: 11, fontWeight: 700, letterSpacing: "0.5px" }}>
-              AUDITING & ASSURANCE
+            <span className="tag" style={{ background: "var(--bg-2)", border: "1px solid var(--border-md)", color: "var(--fg-2)", fontSize: 11, fontWeight: 600, textTransform: "uppercase", letterSpacing: "0.5px" }}>
+              Framework
             </span>
-            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>OWASP Top 10 (2021) Matrix</span>
+            <span style={{ fontSize: 12, color: "var(--fg-3)" }}>OWASP Top 10 (2021) Benchmark</span>
           </div>
           <h1 className="page-heading">Compliance & Regulatory Matrix</h1>
           <p className="page-desc">
@@ -458,8 +458,8 @@ export default function CompliancePage() {
                     key={cat.id}
                     onClick={() => setSelectedCatId(isSelected ? null : cat.id)}
                     style={{
-                      background: isSelected ? "var(--bg-3)" : isPassing ? "var(--bg-1)" : "rgba(225, 29, 72, 0.04)",
-                      border: `1px solid ${isSelected ? "var(--border-hi)" : isPassing ? "var(--border)" : "rgba(225, 29, 72, 0.25)"}`,
+                      background: isSelected ? "var(--bg-3)" : isPassing ? "var(--bg-1)" : "var(--sev-critical-bg)",
+                      border: `1px solid ${isSelected ? "var(--border-hi)" : isPassing ? "var(--border)" : "var(--sev-critical-bd)"}`,
                       borderLeft: `4px solid ${isPassing ? "var(--sev-low)" : stat.critical > 0 ? "var(--sev-critical)" : stat.high > 0 ? "var(--sev-high)" : "var(--sev-medium)"}`,
                       borderRadius: "var(--r)",
                       padding: "14px 16px",
@@ -473,7 +473,7 @@ export default function CompliancePage() {
                       if (!isSelected) e.currentTarget.style.borderColor = "var(--border-hi)";
                     }}
                     onMouseLeave={(e) => {
-                      if (!isSelected) e.currentTarget.style.borderColor = isPassing ? "var(--border)" : "rgba(225, 29, 72, 0.25)";
+                      if (!isSelected) e.currentTarget.style.borderColor = isPassing ? "var(--border)" : "var(--sev-critical-bd)";
                     }}
                   >
                     {/* Header Row */}

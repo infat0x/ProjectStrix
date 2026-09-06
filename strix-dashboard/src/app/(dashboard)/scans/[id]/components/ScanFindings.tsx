@@ -6,10 +6,10 @@ import { MarkdownRenderer } from "@/components/MarkdownRenderer";
 import { Copy, Check } from "lucide-react";
 
 const STATUS_MAP: Record<string, { bg: string; color: string; border: string; label: string }> = {
-  OPEN: { bg: "rgba(245, 158, 11, 0.12)", color: "#f59e0b", border: "rgba(245, 158, 11, 0.28)", label: "Open" },
-  CONFIRMED: { bg: "rgba(239, 68, 68, 0.15)", color: "#ef4444", border: "rgba(239, 68, 68, 0.3)", label: "Confirmed" },
-  RESOLVED: { bg: "rgba(16, 185, 129, 0.12)", color: "#10b981", border: "rgba(16, 185, 129, 0.28)", label: "Resolved" },
-  FALSE_POSITIVE: { bg: "rgba(148, 163, 184, 0.12)", color: "#94a3b8", border: "rgba(148, 163, 184, 0.25)", label: "False Positive" },
+  OPEN: { bg: "rgba(210, 153, 34, 0.10)", color: "#d29922", border: "rgba(210, 153, 34, 0.22)", label: "Open" },
+  CONFIRMED: { bg: "rgba(248, 81, 73, 0.10)", color: "#f85149", border: "rgba(248, 81, 73, 0.22)", label: "Confirmed" },
+  RESOLVED: { bg: "rgba(63, 185, 80, 0.10)", color: "#3fb950", border: "rgba(63, 185, 80, 0.22)", label: "Resolved" },
+  FALSE_POSITIVE: { bg: "rgba(139, 148, 158, 0.10)", color: "#8b949e", border: "rgba(139, 148, 158, 0.20)", label: "False Positive" },
 };
 
 export default function ScanFindings({ scan, vulns }: { scan: ScanDetail, vulns: Vulnerability[] }) {

@@ -264,7 +264,7 @@ export default function Dashboard() {
           <Link
             href="/scans?new=1"
             className="btn-primary"
-            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5, background: "var(--sev-critical)", color: "#fff", border: "1px solid var(--sev-critical-bd)" }}
+            style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 12.5 }}
           >
             <Radar size={14} /> Launch Scan
           </Link>
@@ -376,10 +376,9 @@ export default function Dashboard() {
                 className="btn-primary"
                 style={{
                   marginTop: 8,
-                  background: "var(--sev-critical)",
-                  color: "#fff",
-                  border: "1px solid var(--sev-critical-bd)",
-                  boxShadow: "0 2px 12px rgba(225,29,72,0.3)"
+                  display: "inline-flex",
+                  alignItems: "center",
+                  gap: 6
                 }}
               >
                 <Radar size={14} /> Start First Pentest
