@@ -104,59 +104,19 @@ def run_cmd(cmd, fail_on_error=True, shell=True, env=None, capture_output=True):
         return 1, str(e)
 
 def handle_windows_host(project_root):
-    """If executed on Windows host, check for native podman or bridge into WSL2."""
-    code, out = run_cmd("podman --version", fail_on_error=False)
-    if code == 0:
-        print_success(f"Native Windows Podman detected: {out.strip()}")
-        # Check if podman machine is running
-        code_m, out_m = run_cmd("podman machine list", fail_on_error=False)
-        if code_m == 0 and "default" in out_m and "running" not in out_m.lower():
-            print_step("Starting Podman machine...")
-            run_cmd("podman machine start", fail_on_error=False)
-        return False  # Continue on Windows host with native podman
-
-    # Native podman not on Windows PATH, test WSL2
-    print_warn("Podman CLI not found in Windows PATH. Checking for WSL2...")
+    """Bridge deployment directly into WSL2 Podman (no Windows Podman Desktop required)."""
     code_wsl, _ = run_cmd("wsl --status", fail_on_error=False)
-    if code_wsl == 0:
-        print_success("WSL2 subsystem is active! Bridging deployment into WSL2 automatically...")
-        norm_path = project_root.replace("\\", "/")
-        
-        # Calculate WSL path cleanly without stderr/warning pollution
-        wsl_dir = ""
-        try:
-            res = subprocess.run(
-                ["wsl", "wslpath", "-a", norm_path],
-                stdout=subprocess.PIPE,
-                stderr=subprocess.DEVNULL,
-                text=True
-            )
-            for line in res.stdout.splitlines():
-                line = line.strip().replace("\r", "")
-                if line.startswith("/"):
-                    wsl_dir = line
-                    break
-        except Exception:
-            pass
+    if code_wsl != 0:
+        print_error("WSL2 subsystem was not detected on Windows.")
+        print("Please enable/install WSL2: wsl --install")
+        sys.exit(1)
 
-        if not wsl_dir:
-            drive_letter = norm_path[0].lower()
-            rest = norm_path[2:]
-            wsl_dir = f"/mnt/{drive_letter}{rest}"
-
-        # Ensure Podman & tools are present in WSL
-        code_wp, _ = run_cmd("wsl podman --version", fail_on_error=False)
-        if code_wp != 0:
-            print_step("Installing Podman and dependencies inside WSL2...")
-            run_cmd("wsl -u root apt-get update && wsl -u root apt-get install -y podman podman-compose python3", fail_on_error=False)
-
-        print_step(f"Executing deployment in WSL2 at {wsl_dir}...")
-        exit_code = subprocess.call(["wsl", "bash", "-c", f"cd '{wsl_dir}' && python3 runner/podman/deploy.py"])
-        sys.exit(exit_code)
-
-    print_error("Neither Podman for Windows nor WSL2 was found.")
-    print("Please install Podman Desktop (https://podman-desktop.io) or WSL2 (wsl --install).")
-    sys.exit(1)
+    norm_path = project_root.replace("\\", "/")
+    drive = norm_path[0].lower()
+    wsl_dir = f"/mnt/{drive}{norm_path[2:]}"
+    print_success(f"Forwarding deployment directly into WSL2 Podman ({wsl_dir})...")
+    exit_code = subprocess.call(["wsl", "bash", "-c", f"cd '{wsl_dir}' && python3 runner/podman/deploy.py"])
+    sys.exit(exit_code)
 
 def configure_wsl_podman():
     """Ensure cgroup_manager is set to cgroupfs for rootless WSL2 environments."""
@@ -380,25 +340,21 @@ def setup_podman_environment(config_dir):
     return env_vars
 
 def deploy_containers(config_dir, compose_cmd, env_vars):
-    """Build and deploy containers using the compose file in podman/."""
+    """Build and deploy containers using the compose file in podman/ with live progress output."""
     print_step("Deploying Strix via Podman Compose...")
     compose_file = os.path.join(config_dir, "podman-compose.yml")
-    env_file = os.path.join(config_dir, ".env")
 
     env = os.environ.copy()
     env.update(env_vars)
+    if is_wsl():
+        env["PODMAN_CGROUP_MANAGER"] = "cgroupfs"
 
-    cmd = f"{compose_cmd} -f {compose_file} --env-file {env_file} up -d --build"
+    cmd = f"{compose_cmd} -f {compose_file} up -d --build"
     print(f"Executing in {config_dir}: {cmd}")
-    
-    code, out = run_cmd(cmd, fail_on_error=False, env=env)
-    if code != 0:
-        # Fallback if --env-file flag is not supported by older podman-compose versions
-        fallback_cmd = f"{compose_cmd} -f {compose_file} up -d --build"
-        print_warn(f"--env-file flag failed. Retrying: {fallback_cmd}")
-        run_cmd(fallback_cmd, fail_on_error=True, env=env)
+    print(f"{Colors.OKCYAN}Streaming container build and startup logs in real-time...{Colors.ENDC}\n")
 
-    print_success("Containers started.")
+    code, _ = run_cmd(cmd, fail_on_error=True, env=env, capture_output=False)
+    print_success("Containers built and started successfully.")
 
 def wait_for_service(port, max_wait_sec=60):
     """Wait for Strix Dashboard HTTP endpoint to respond."""
@@ -426,7 +382,7 @@ def wait_for_service(port, max_wait_sec=60):
 
 def main():
     print(f"\n{Colors.OKCYAN}{Colors.BOLD}╔══════════════════════════════════════════════════════════════════╗{Colors.ENDC}")
-    print(f"{Colors.OKCYAN}{Colors.BOLD}║    PROJECT STRIX — 1-CLICK PODMAN AUTO-DEPLOYER (LINUX/WSL2)     ║{Colors.ENDC}")
+    print(f"{Colors.OKCYAN}{Colors.BOLD}║         PROJECT STRIX -- 1-CLICK PODMAN DEPLOYER (WSL2)          ║{Colors.ENDC}")
     print(f"{Colors.OKCYAN}{Colors.BOLD}╚══════════════════════════════════════════════════════════════════╝{Colors.ENDC}\n")
 
     project_root = get_project_root()

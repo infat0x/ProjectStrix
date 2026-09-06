@@ -1,0 +1,30 @@
+# Ignore local node modules & build outputs
+**/node_modules
+strix-dashboard/node_modules
+**/.next
+strix-dashboard/.next
+strix-dashboard/out
+
+# Ignore git & internal docs
+.git
+.github
+.agents
+docs/.vitepress/dist
+docs/.vitepress/cache
+
+# Ignore sensitive env files
+**/.env
+**/.env.local
+**/.env*.local
+podman/.env
+podman/.env.podman
+
+# Temporary files & logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+/tmp
+/tmp/*
+strix_runs
+*.log

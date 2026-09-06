@@ -1,46 +1,32 @@
-# Project Strix -- 1-Click Podman Deployment for Windows / WSL2
+# Project Strix -- 1-Click Podman Deployment (WSL2)
 $ErrorActionPreference = "Stop"
-$env:PYTHONUNBUFFERED = "1"
 
 $ScriptDir = $PSScriptRoot
 if (-not $ScriptDir) {
     $ScriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 }
 $RootDir = (Resolve-Path "$ScriptDir\..\..").Path
-Set-Location $RootDir
 
 Write-Host "==================================================================" -ForegroundColor Cyan
-Write-Host "       PROJECT STRIX -- PODMAN DEPLOYMENT (WINDOWS / WSL2)        " -ForegroundColor Cyan
+Write-Host "            PROJECT STRIX -- PODMAN DEPLOYMENT (WSL2)             " -ForegroundColor Cyan
 Write-Host "==================================================================" -ForegroundColor Cyan
 
-$DeployScript = Join-Path $ScriptDir "deploy.py"
-
-# 1. Check if Python is available on Windows
-$PythonCmd = Get-Command python -ErrorAction SilentlyContinue
-if (-not $PythonCmd) {
-    $PythonCmd = Get-Command python3 -ErrorAction SilentlyContinue
-}
-if (-not $PythonCmd) {
-    $PythonCmd = Get-Command py -ErrorAction SilentlyContinue
+# 1. Check WSL2
+if (-not (Get-Command wsl -ErrorAction SilentlyContinue)) {
+    Write-Error "WSL2 is required to run Project Strix in Podman.`nPlease install WSL2 using: wsl --install"
+    exit 1
 }
 
-if ($PythonCmd) {
-    & $PythonCmd.Source $DeployScript @args
-    exit $LASTEXITCODE
-}
+# 2. Convert Windows root path to clean WSL path
+$Normalized = $RootDir.Replace("\", "/")
+$DriveLetter = $Normalized.Substring(0, 1).ToLower()
+$WslPath = "/mnt/$DriveLetter" + $Normalized.Substring(2)
 
-# 2. If Python is not on Windows, bridge directly to WSL2
-$WslCmd = Get-Command wsl -ErrorAction SilentlyContinue
-if ($WslCmd) {
-    Write-Host "[+] Python not found on Windows host. Bridging directly to WSL2..." -ForegroundColor Green
-    $NormalizedPath = $RootDir.Replace("\", "/")
-    $WslPath = (wsl wslpath -a "$NormalizedPath").Trim()
-    
-    # Run deploy.py inside WSL
-    wsl bash -c "cd '$WslPath'; python3 runner/podman/deploy.py"
-    exit $LASTEXITCODE
-}
+Write-Host "[+] Forwarding deployment directly into WSL2 Podman..." -ForegroundColor Green
+Write-Host "[+] Project Root (WSL2): $WslPath" -ForegroundColor DarkGray
+Write-Host ""
 
-Write-Error "Neither Python nor WSL2 was found on this system. Please install Python or WSL2 to proceed."
-exit 1
+# 3. Execute inside WSL2 with live streaming output
+wsl bash -c "cd '$WslPath' && python3 runner/podman/deploy.py"
+exit $LASTEXITCODE
 
