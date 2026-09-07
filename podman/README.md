@@ -30,3 +30,39 @@ To deploy or manage this stack, run the orchestrators located in `runner/podman/
   ```cmd
   runner\podman\deploy.bat
   ```
+
+---
+
+## 🔁 Container Lifecycle & Troubleshooting Cheat Sheet
+
+### 1. Wake Up Stopped Containers (After Reboot / WSL Restart)
+When WSL or your machine restarts, containers enter the `Exited` state. Do **not** run the installer again:
+```bash
+# Check all containers (including exited)
+sudo podman ps -a
+
+# Start the existing stack instantly without rebuilding
+sudo podman start strix-postgres strix-dashboard
+```
+
+### 2. Safe Rebuild & Upgrade (Without Losing Data)
+If you made code changes or pulled new git commits and want to rebuild the container while keeping your database accounts and scan history:
+```bash
+cd podman
+
+# Stop & remove old container instances (preserves volumes)
+sudo podman-compose down
+
+# Rebuild dashboard image with new code and start
+sudo podman-compose up -d --build
+```
+> **⚠️ Warning**: Never run `podman-compose down -v` unless you explicitly want to wipe your database! The `-v` flag deletes named volumes.
+
+### 3. Clean Up Accidental Non-Root (Rootless) Deployments
+If you accidentally ran `./deploy.sh` without `sudo`:
+```bash
+cd podman
+podman-compose down
+```
+Then manage your official stack using `sudo podman ...`.
+

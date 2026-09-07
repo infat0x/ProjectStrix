@@ -78,9 +78,16 @@ If you prefer to manage the compose lifecycle manually:
 
 | Action | Podman Command |
 | :--- | :--- |
-| **View Live Dashboard Logs** | `podman logs -f strix-dashboard` |
-| **View Database Logs** | `podman logs -f strix-postgres` |
-| **List Running Containers** | `podman ps` |
-| **Restart Stack** | `podman-compose -f podman-compose.yml restart` |
-| **Stop Stack** | `podman-compose -f podman-compose.yml down` |
-| **View Persistent Volume Data** | `podman volume ls` |
+| **Wake Up Stopped Stack (After Reboot)** | `sudo podman start strix-postgres strix-dashboard` |
+| **List All Containers (Including Exited)** | `sudo podman ps -a` |
+| **List Actively Running Containers** | `sudo podman ps` |
+| **View Live Dashboard Logs** | `sudo podman logs -f strix-dashboard` |
+| **View Database Logs** | `sudo podman logs -f strix-postgres` |
+| **Restart Running Stack** | `sudo podman-compose restart` |
+| **Stop Stack (Preserving Database)** | `sudo podman-compose down` |
+| **Rebuild & Start (Preserving Database)** | `sudo podman-compose up -d --build` |
+| **Inspect Persistent Volumes** | `sudo podman volume ls` |
+
+> [!WARNING]
+> Never run `podman-compose down -v` unless you intend to completely delete the PostgreSQL database volume (`strix-db-data`).
+

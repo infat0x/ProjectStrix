@@ -4,13 +4,13 @@ Project Strix provides a comprehensive suite of features distributed across its 
 
 ## 1. Advanced Web Dashboard (UI)
 - **Modern & Responsive Design:** A fully glassmorphic, dark-themed interface built with Next.js App Router and React.
-- **Interactive Data Visualization:** Real-time metrics including a dynamic Security Score, Active Scans counter, and Critical Threat highlights.
+- **Interactive Data Visualization:** Real-time metrics including a dynamic Target Resilience score, Active Pentests counter, and Critical Exploit highlights.
 - **Analytics & Charts:** A powerful Recharts-based dashboard view that maps out vulnerability severities and scan progress trends in a clean, visual format.
 - **In-App Notifications:** Real-time alert system notifying users the moment a scan completes or a critical vulnerability is found.
 
 ## 2. Autonomous Pentesting Engine
 - **LLM Integration:** Leverages cutting-edge models (OpenAI GPT-4o, Anthropic Claude 3.5 Sonnet, OpenRouter, Nemotron) for contextual vulnerability discovery.
-- **Custom Scan Modes:** Supports `quick`, `standard`, and `deep` scan intensities depending on your compliance requirements.
+- **Custom Scan Modes:** Supports `quick`, `standard`, and `deep` scan intensities depending on your engagement scope and depth.
 - **Target Flexibility:** Can analyze Live URLs, GitHub Repositories, and local code directories.
 - **Custom Instructions:** Allows users to provide natural language prompts (e.g., "Focus exclusively on IDOR vulnerabilities in the billing API module").
 
