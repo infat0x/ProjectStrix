@@ -13,11 +13,12 @@ runner/
 │   ├── nuke.py                # Complete uninstaller & host environment wipe
 │   └── backup.sh              # Compressed PostgreSQL database backup script
 │
-└── podman/                    # Containerized Deployment (Podman & Docker)
-    ├── deploy.py              # Cross-platform 1-click deployer (Linux, Windows, WSL2)
-    ├── deploy.sh              # Bash shortcut
-    ├── deploy.ps1             # Windows PowerShell launcher
-    └── deploy.bat             # Windows Command Prompt / Double-click launcher
+│   ├── podman/                    # Containerized Deployment (Podman & Docker)
+│   │   ├── deploy.py              # Cross-platform 1-click deployer (Linux, Windows, WSL2)
+│   │   ├── deploy.sh              # Bash shortcut
+│   │   ├── nuke.sh                # Complete Podman purge and disk cleanup script
+│   │   ├── deploy.ps1             # Windows PowerShell launcher
+│   │   └── deploy.bat             # Windows Command Prompt / Double-click launcher
 ```
 
 ---
