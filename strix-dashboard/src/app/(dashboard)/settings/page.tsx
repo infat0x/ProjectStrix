@@ -72,8 +72,8 @@ export default function Settings() {
   }>({});
   const [healthLoading, setHealthLoading] = useState(false);
 
-  // API Keys State
-  const [keys, setKeys] = useState({
+  // API Keys State (supports raw string inputs or boolean masked indicators from server)
+  const [keys, setKeys] = useState<Record<string, string | boolean>>({
     openai: "",
     anthropic: "",
     gemini: "",
@@ -89,9 +89,9 @@ export default function Settings() {
   const [showKeys, setShowKeys] = useState<Record<string, boolean>>({});
   const [providerSearch, setProviderSearch] = useState("");
 
-  // Total configured keys count
+  // Total configured keys count (accounts for boolean flags and non-empty strings)
   const configuredCount = useMemo(() => {
-    return Object.values(keys).filter(k => typeof k === "string" && k.trim().length > 0).length;
+    return Object.values(keys).filter(k => k === true || (typeof k === "string" && k.trim().length > 0)).length;
   }, [keys]);
 
   // Custom Models State
@@ -253,18 +253,36 @@ export default function Settings() {
   // Save Handlers
   const handleSave = async (tab: string) => {
     if (tab === "api") {
-      await fetch("/api/user/keys", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(keys)
-      });
-      const validModels = customModels.filter(m => m.value.trim() && m.label.trim());
-      await fetch("/api/user/settings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ type: "customModels", data: validModels })
-      });
-      setSaveMsg("API keys and custom models updated");
+      try {
+        const res = await fetch("/api/user/keys", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(keys)
+        });
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.error || "Failed to save API keys");
+        }
+        const validModels = customModels.filter(m => (m.value || "").trim() && (m.label || "").trim());
+        await fetch("/api/user/settings", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ type: "customModels", data: validModels })
+        });
+        // Refetch masked keys from server to synchronize state and mask raw values
+        const keysRes = await fetch("/api/user/keys");
+        if (keysRes.ok) {
+          const updatedKeys = await keysRes.json();
+          setKeys(updatedKeys);
+        }
+        setSaveMsg("API keys and custom models updated");
+        setSaved(true);
+        setTimeout(() => setSaved(false), 2500);
+      } catch (err: any) {
+        setSaveMsg(err.message || "Failed to update keys");
+        setSaved(true);
+        setTimeout(() => setSaved(false), 3500);
+      }
     } else if (tab === "agent") {
       await fetch("/api/user/settings", {
         method: "POST",
@@ -655,8 +673,9 @@ export default function Settings() {
 
                 <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(420px, 1fr))", gap: 14 }}>
                   {grp.items.map(item => {
-                    const val = keys[item.key as keyof typeof keys] || "";
-                    const isConfigured = val.trim().length > 0;
+                    const rawVal = keys[item.key as keyof typeof keys];
+                    const isConfigured = rawVal === true || (typeof rawVal === "string" && rawVal.trim().length > 0);
+                    const val = typeof rawVal === "string" ? rawVal : "";
                     const isRevealed = !!showKeys[item.key];
 
                     return (
@@ -705,7 +724,7 @@ export default function Settings() {
                         <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
                           <input
                             type={isRevealed ? "text" : "password"}
-                            placeholder={item.placeholder}
+                            placeholder={rawVal === true ? "•••••••••••••••• (Encrypted in Keystore)" : item.placeholder}
                             value={val}
                             onChange={e => setKeys({ ...keys, [item.key]: e.target.value })}
                             style={{
@@ -748,10 +767,11 @@ export default function Settings() {
                           <span>{item.hint}</span>
                           {isConfigured && (
                             <button
+                              type="button"
                               onClick={() => setKeys({ ...keys, [item.key]: "" })}
                               style={{ background: "transparent", border: "none", color: "var(--sev-critical)", cursor: "pointer", fontSize: 11.5 }}
                             >
-                              Clear
+                              Clear Key
                             </button>
                           )}
                         </div>
