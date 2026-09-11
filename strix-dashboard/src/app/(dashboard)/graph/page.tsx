@@ -37,23 +37,23 @@ export default function AnalyticsDashboard() {
   }, []);
 
   const s: any = {
-    page: { padding: 28, display: "flex", flexDirection: "column", gap: 24, height: "100%", overflowY: "auto" },
+    page: { padding: "28px 32px", display: "flex", flexDirection: "column", gap: 24, minHeight: "100%" },
     grid: { display: "grid", gridTemplateColumns: "repeat(4, 1fr)", gap: 20 },
     card: { background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", padding: 20 },
     cardTitle: { fontSize: 13, fontWeight: 600, color: "var(--fg-3)", textTransform: "uppercase", letterSpacing: "0.5px" },
     cardValue: { fontSize: 32, fontWeight: 700, color: "var(--fg)", marginTop: 12, display: "flex", alignItems: "center", gap: 12 },
-    chartCard: { background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", display: "flex", flexDirection: "column", height: 350 },
+    chartCard: { background: "var(--bg-1)", border: "1px solid var(--border)", borderRadius: "var(--r-lg)", display: "flex", flexDirection: "column", minHeight: 380, overflow: "hidden" },
     chartHead: { padding: "18px 20px", borderBottom: "1px solid var(--border)", fontSize: 14, fontWeight: 600, color: "var(--fg)" },
-    chartBody: { flex: 1, padding: 20, position: "relative" },
+    chartBody: { flex: 1, padding: 20, position: "relative", minHeight: 280 },
     badge: (sev: string) => ({
       display: "inline-block", padding: "4px 8px", borderRadius: "var(--r)", fontSize: 11, fontWeight: 600, textTransform: "uppercase",
       background: sev === "critical" ? "rgba(239, 68, 68, 0.15)" : sev === "high" ? "rgba(249, 115, 22, 0.15)" : sev === "medium" ? "rgba(234, 179, 8, 0.15)" : "rgba(34, 197, 94, 0.15)",
       color: sev === "critical" ? "var(--sev-critical)" : sev === "high" ? "var(--sev-high)" : sev === "medium" ? "var(--sev-medium)" : "var(--sev-low)",
       border: `1px solid ${sev === "critical" ? "rgba(239, 68, 68, 0.3)" : sev === "high" ? "rgba(249, 115, 22, 0.3)" : sev === "medium" ? "rgba(234, 179, 8, 0.3)" : "rgba(34, 197, 94, 0.3)"}`
     }),
-    table: { width: "100%", borderCollapse: "collapse", fontSize: 13 },
+    table: { width: "100%", borderCollapse: "collapse", fontSize: 13, minWidth: 650 },
     th: { textAlign: "left", padding: "12px 16px", color: "var(--fg-3)", fontWeight: 500, borderBottom: "1px solid var(--border-md)" },
-    td: { padding: "12px 16px", color: "var(--fg)", borderBottom: "1px solid var(--border)", maxWidth: 200, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
+    td: { padding: "12px 16px", color: "var(--fg)", borderBottom: "1px solid var(--border)", maxWidth: 350, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }
   };
 
   if (loading || !data) return <div style={{ ...s.page, justifyContent: "center", alignItems: "center", color: "var(--fg-3)" }}>Loading Analytics...</div>;
@@ -148,7 +148,7 @@ export default function AnalyticsDashboard() {
           Recent Discoveries
           <span style={{ fontSize: 12, color: "var(--fg-3)", fontWeight: 400 }}>Top {data.recentVulns.length} latest</span>
         </div>
-        <div style={{ padding: 0 }}>
+        <div style={{ padding: 0, overflowX: "auto" }}>
           {data.recentVulns.length > 0 ? (
             <table style={s.table}>
               <thead>
