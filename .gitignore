@@ -18,15 +18,5 @@ strixexampleoutput.json
 .windsurf/
 .cursor/
 
-# Security audit docs — should not be public
-security_implementation.md
-
-# AI tool artifacts
-skills-lock.json
-AGENTS.md
-GEMINI.md
-
 # Build artifacts
 *.tsbuildinfo
-
-implementation.md
