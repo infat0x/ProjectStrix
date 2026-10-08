@@ -12,11 +12,7 @@ docs/.vitepress/dist/
 docs/.vitepress/cache/
 strixexampleoutput.json
 *.log
-.gemini/
-.claude/
-.agents/
-.windsurf/
-.cursor/
+
 
 # Build artifacts
 *.tsbuildinfo
