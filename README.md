@@ -76,5 +76,5 @@ sudo python3 runner/host/deploy.py
 
 ---
 <div align="center">
-  <i>Developed for next-generation security validation by infat.</i>
+  <i>Developed for next-generation security validation by @infat.</i>
 </div>
